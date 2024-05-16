@@ -6,4 +6,4 @@ transformers
 tqdm
 typing
 scikit-learn
-
+whisper
