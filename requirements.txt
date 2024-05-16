@@ -1,0 +1,9 @@
+torch
+peft
+evaluate
+datasets
+transformers
+tqdm
+typing
+scikit-learn
+whisper
