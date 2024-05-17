@@ -6,4 +6,6 @@ transformers
 tqdm
 typing
 scikit-learn
-whisper
+openai-whisper
+
+
