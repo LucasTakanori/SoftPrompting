@@ -11,8 +11,8 @@
 
 
 python TS-ASR/training_pt.py \
-        --train-json \
-        --embed_path \
+        --train-json /path-to-json/\
+        --embed_path /path-to-embedings\
         --batch-size 32 \
         --dev-batch-size 32 \
         --no-timestamps-training \
@@ -20,4 +20,4 @@ python TS-ASR/training_pt.py \
         --prompt_length \
         --lr \
         --exp_name \
-        --seed \
+        --seed 1234\
