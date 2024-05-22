@@ -36,7 +36,7 @@ class Prompting(nn.Module):  # basic prompt tuning
         self.use_mlp = use_mlp
         self.depth = depth
         self.prompt_length = prompt_length
-        self.spk_embed_layer = nn.Linear(512, dim)
+        #self.spk_embed_layer = nn.Linear(512, dim)
         self.soft_prompt_extra_encoder = nn.Parameter(torch.Tensor(depth, prompt_length, dim), requires_grad=True)
         torch.nn.init.xavier_uniform_(self.soft_prompt_extra_encoder)
         self.soft_prompt_extra_decoder = nn.Parameter(torch.Tensor(depth, prompt_length, dim), requires_grad=True)
