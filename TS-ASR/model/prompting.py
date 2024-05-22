@@ -51,7 +51,7 @@ class Prompting(nn.Module):  # basic prompt tuning
 
     def forward(self, embed_in):
         b = embed_in.size(0)
-        embed = self.spk_embed_layer(embed_in)
+        #embed = self.spk_embed_layer(embed_in)
         prompt_encoder = self.soft_prompt_extra_encoder
         prompt_decoder = self.soft_prompt_extra_decoder
         prompt_encoder, prompt_decoder = map(lambda x: list(x.chunk(self.depth, dim=0)),
@@ -64,7 +64,7 @@ class Prompting(nn.Module):  # basic prompt tuning
             prompt_encoder[i] = prompt_encoder[i].repeat(b, 1, 1)
             prompt_decoder[i] = prompt_decoder[i].repeat(b, 1, 1)
 
-        prompt_encoder[0] = torch.concat((embed.unsqueeze(1), prompt_encoder[0]), dim=1)
+        #prompt_encoder[0] = torch.concat((embed.unsqueeze(1), prompt_encoder[0]), dim=1)
 
         return prompt_encoder + prompt_decoder
 
