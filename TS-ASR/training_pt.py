@@ -90,6 +90,16 @@ def get_parser() -> argparse.ArgumentParser:
 
 
 class System(nn.Module):
+    """
+    This class defines the main system that is used for training.
+
+    Attributes:
+        model (whisper.model.Whisper): The Whisper model to fine-tune
+        prompt_layer (Prompting): The prompt layer that generates the soft prompt
+        hooks (list): The list of hooks that are used to modify the forward pass of the model
+        prompt (dict): The dictionary that stores the soft prompt for each layer
+    
+    """
     def __init__(self, model, prompt_layer):
         super(System, self).__init__()
         self.prompt_layer = prompt_layer
@@ -118,9 +128,31 @@ class System(nn.Module):
         return logits
 
     def _install_hooks(self, depth):
+        """
+        Install hooks for prompting in the model.
 
+        Args:
+            depth (int): The depth of the prompting, indicating the number of layers to apply prompting.
+
+        Returns:
+            tuple: A tuple containing the hooks and prompt dictionary.
+
+        The `_install_hooks` function installs hooks in the model to enable prompting. It modifies the input and output of
+        specific layers in the encoder and decoder modules of the model.
+
+        The function defines several hook functions that are used to modify the input and output of the layers. These hook
+        functions are registered with the corresponding layers using the `register_forward_pre_hook` and
+        `register_forward_hook` methods.
+
+        The `prompt` dictionary is used to store the prompt values for each module. The hook functions access the prompt
+        values from this dictionary and modify the input and output accordingly.
+
+        The hooks and prompt dictionary are returned as a tuple.
+        """
         hooks = []
         prompt = {}
+
+        # Define hook functions for encoder and decoder modules
 
         def prompting_hook_fn_decoder_intermediate(module, args):
             modified_input = list(args)
@@ -141,6 +173,7 @@ class System(nn.Module):
             modified_input[0][:, 0:prompt[module].size(1), :] = prompt[module] + self.model.encoder.positional_embedding[0:prompt[module].size(1), :]
             return tuple(modified_input)
 
+        # Register hooks for encoder modules
         i = 0
         for layer in self.model.encoder.modules():
             if isinstance(layer, ResidualAttentionBlock):
@@ -151,17 +184,19 @@ class System(nn.Module):
                     # encoder prompting intermediate
                     hooks.append(layer.register_forward_pre_hook(prompting_hook_fn_encoder_intermediate))
                 i += 1
-        # decoder prompting input
+
+        # Register hook for decoder token embedding
         hooks.append(self.model.decoder.token_embedding.register_forward_hook(prompting_hook_fn_decoder_input))
+
+        # Register hooks for decoder modules
         i = 0
         for layer in self.model.decoder.modules():
             if isinstance(layer, ResidualAttentionBlock):
-                # if i == 0:
-                #     hooks.append(layer.register_forward_pre_hook(prompting_hook_fn_decoder_input))
                 if 0 < i < depth:
                     # decoder prompting intermediate
                     hooks.append(layer.register_forward_pre_hook(prompting_hook_fn_decoder_intermediate))
                 i += 1
+
         return hooks, prompt
 
 
