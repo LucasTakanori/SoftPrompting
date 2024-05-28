@@ -38,7 +38,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--embed_path",
         type=str,
-        required=True,
+        required=False,
     )
     parser.add_argument("--batch-size", type=int, default=1, help="Batch size for training")
     parser.add_argument("--dev-batch-size", type=int, default=1, help="Batch size for validation")
@@ -79,6 +79,7 @@ def get_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate for training")
     parser.add_argument("--exp_name", type=str, required=True, help="exp_name")
+    parser.add_argument("--epoch", type=int, default=1)
     parser.add_argument(
         "--seed",
         type=int,
@@ -223,7 +224,7 @@ def main():
         prompt_use_rate=1,
         no_timestamps_rate=0.0,
         context_len=args.prompt_length,
-        embed_path=args.embed_path,
+        #embed_path=args.embed_path,
         shuffle=True,
         n_workers=8,
     )
@@ -245,14 +246,14 @@ def main():
     train(
         system=system,
         train_loader=train_loader,
-        epochs=10,
+        epochs=args.epoch,
         optimizer=optimizer,
         scheduler=scheduler,
         exp_name=args.exp_name,
     )
 
     train_loader = get_dataloader(
-        json='./data_utils/data/train-100-noisy.json',
+        json='./data_utils/data/train-100-noisy.json',   #HACK
         tokenizer=tokenizer,
         batch_size=args.batch_size,
         fp16=fp16,
@@ -261,7 +262,7 @@ def main():
         prompt_use_rate=1,
         no_timestamps_rate=0.0,
         context_len=args.prompt_length,
-        embed_path=args.embed_path,
+        #embed_path=args.embed_path,
         shuffle=True,
         n_workers=8,
     )
