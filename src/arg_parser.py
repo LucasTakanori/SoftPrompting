@@ -17,7 +17,7 @@ class ArgsParser:
         self.parser.add_argument(
             "--seed",
             type=int,
-            default=1234,
+            default=TRAIN_DEFAULT_SETTINGS["random_seed"],
             help="Random seed for reproducibility",
         )
     
