@@ -21,3 +21,26 @@ class ArgsParser:
             help="Random seed for reproducibility",
         )
     
+        self.parser.add_argument(
+            '--max_epochs',
+            type = int,
+            default = TRAIN_DEFAULT_SETTINGS['max_epochs'],
+            help = 'Max number of epochs to train.',
+            )
+            
+        self.parser.add_argument(
+            '--use_weights_and_biases',
+            action = argparse.BooleanOptionalAction,
+            default = TRAIN_DEFAULT_SETTINGS['use_weights_and_biases'],
+            help = 'Set to True if you want to use Weights and Biases.',
+            )
+        
+        self.parser.add_argument(
+            '--load_checkpoint',
+            action = argparse.BooleanOptionalAction,
+            default = TRAIN_DEFAULT_SETTINGS['load_checkpoint'],
+            help = 'Set to True if you want to load a previous checkpoint and continue training from that point. \
+                Loaded parameters will overwrite all inputted parameters.',
+            )          
+
+            
