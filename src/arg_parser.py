@@ -34,7 +34,14 @@ class ArgsParser:
             default = TRAIN_DEFAULT_SETTINGS['use_weights_and_biases'],
             help = 'Set to True if you want to use Weights and Biases.',
             )
-        
+
+        self.parser.add_argument(
+            '--eval_and_save_best_model_every', 
+            type = int, 
+            default = TRAIN_DEFAULT_SETTINGS['eval_and_save_best_model_every'],
+            help = "The model is evaluated on train and validation sets and saved every eval_and_save_best_model_every steps. \
+                Set to 0 if you don't want to execute this utility.",
+            )                
         self.parser.add_argument(
             '--load_checkpoint',
             action = argparse.BooleanOptionalAction,
