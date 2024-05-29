@@ -68,6 +68,13 @@ class ArgsParser:
             type = int, 
             default = TRAIN_DEFAULT_SETTINGS['sample_rate'],
             help = "Sample rate that you want to use (every audio loaded is resampled to this frequency)."
-            )          
+            ) 
+
+        self.parser.add_argument(
+            '--whisper_flavour',
+            type = str,
+            default = 'TRAIN_DEFAULT_SETTINGS["whisper_flavour"]',
+            help = 'The whisper flavour to use.'
+            )         
 
             

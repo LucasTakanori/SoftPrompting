@@ -7,5 +7,5 @@ TRAIN_DEFAULT_SETTINGS = {
     "training_augmentation_prob": 0,
     "evaluation_augmentation_prob": 0,
     "sample_rate": 16000,
-
+    "whisper_flavour": "medium",
 }
