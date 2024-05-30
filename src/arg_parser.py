@@ -88,4 +88,9 @@ class ArgsParser:
             help = 'The whisper flavour to use.'
             )         
 
-            
+    def main(self):
+        self.add_parser_args()
+        self.arguments = self.parser.parse_args()
+    
+    def __call__(self):
+        self.main()
