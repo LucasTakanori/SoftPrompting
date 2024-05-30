@@ -165,6 +165,7 @@ class Trainer():
     def load_training_data(self):
         logger.info("Loading training data...")
         training_dataset = TrainDataset(utterances_paths=self.params.utterances_path,
+                                        random_crop_secs=self.params.random_crop_secs,
                                         augmentation_prob=self.params.training_augmentation_prob,
                                         sample_rate=self.params.sample_rate,
                                         waveforms_mean=None,

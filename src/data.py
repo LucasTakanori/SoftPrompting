@@ -5,6 +5,8 @@ import json
 import torchaudio
 import torch
 import random
+from random import randint
+import numpy as np
 #region Logging
 
 # Set logging config
@@ -27,12 +29,15 @@ logger.addHandler(logger_stream_handler)
 
 
 class TrainDataset(Dataset):
-    def __init__(self, utterances_paths, augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
+    def __init__(self, utterances_paths, random_crop_secs, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
         
         self.utterances_paths = utterances_paths
         # I suspect when instantiating two datasets the parameters are overrided
         self.augmentation_prob = augmentation_prob #TODO: implement data augmentation
+        self.random_crop_secs = random_crop_secs
+        self.padding_type = padding_type
         self.sample_rate = sample_rate
+        self.random_crop_samples = int(self.random_crop_secs * self.sample_rate)
         self.waveforms_mean = waveforms_mean
         self.waveforms_std = waveforms_std
         self.read_json()
@@ -62,6 +67,35 @@ class TrainDataset(Dataset):
 
         return normalized_waveform    
 
+    def pad_waveform(self, waveform, padding_type, random_crop_samples):
+        """
+        If the waveform is shorter than the window, we make padding to allow cropping longer segments.
+
+        Two padding systems: repetition padding which literally repeats the waveform until it reaches the desired length 
+        and zero padding which adds zeros to the left of the waveform until it reaches the desired length.
+        """
+        if padding_type == "zero_pad":
+            pad_left = max(0, self.random_crop_samples - waveform.shape[-1])
+            padded_waveform = torch.nn.functional.pad(waveform, (pad_left, 0), mode = "constant")
+        elif padding_type == "repetition_pad":
+            necessary_repetitions = int(np.ceil(random_crop_samples / waveform.size(-1)))
+            padded_waveform = waveform.repeat(necessary_repetitions)
+        else:
+            raise Exception('No padding choice found.') 
+        
+        return padded_waveform
+    
+    def sample_audio_window(self, waveform, random_crop_samples):
+
+        waveform_total_samples = waveform.size()[-1]
+        
+        # TODO maybe we can add an assert to check that random_crop_samples <= waveform_total_samples (will it slow down the process?)
+        random_start_index = randint(0, waveform_total_samples - random_crop_samples)
+        end_index = random_start_index + random_crop_samples
+        
+        cropped_waveform =  waveform[random_start_index : end_index]
+
+        return cropped_waveform
 
     def process_waveform(self, waveform: torch.Tensor, original_sample_rate:int):
         
@@ -85,6 +119,22 @@ class TrainDataset(Dataset):
         # stereo to mono
         waveform_mono = torch.mean(waveform, dim=0)
         waveform = waveform_mono.squeeze(0)
+
+        if self.random_crop_secs > 0:
+            # We make padding to allow cropping longer segments
+            # (If not, we can only crop at most the duration of the shortest audio)
+            if self.random_crop_samples > waveform.size(-1):
+                waveform = self.pad_waveform(waveform, self.padding_type, self.random_crop_samples)
+            
+            # TODO torchaudio.load has frame_offset and num_frames params. Providing num_frames and frame_offset arguments is more efficient
+            waveform = self.sample_audio_window(
+                waveform, 
+                random_crop_samples = self.random_crop_samples,
+                )
+        else:
+            # HACK don't understand why, I have to do this slicing (which sample_audio_window does) to make dataloader work
+            waveform =  waveform[:]
+
 
         waveform = self.normalize(waveform)
 

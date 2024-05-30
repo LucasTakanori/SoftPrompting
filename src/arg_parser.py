@@ -36,6 +36,20 @@ class ArgsParser:
         )
 
         self.parser.add_argument(
+            "--random_crop_secs",
+            type=float,
+            default=TRAIN_DEFAULT_SETTINGS["random_crop_secs"],
+            help="Random crop seconds for training",
+        )
+
+        self.parser.add_argument(
+            "--padding_type",
+            type=str,
+            default=TRAIN_DEFAULT_SETTINGS["padding_type"],
+            help="Padding type for cropping",
+        )
+
+        self.parser.add_argument(
             "--seed",
             type=int,
             default=TRAIN_DEFAULT_SETTINGS["random_seed"],
