@@ -9,4 +9,6 @@ TRAIN_DEFAULT_SETTINGS = {
     "evaluation_augmentation_prob": 0,
     "sample_rate": 16000,
     "whisper_flavour": "medium",
+    "batch_size": 32,
+    "num_workers": 4,
 }

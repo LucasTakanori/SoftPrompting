@@ -9,21 +9,31 @@ class ArgsParser:
     def initialize_parser(self):
 
         self.parser = argparse.ArgumentParser(
-            description = 'Train a Text and Speech Emotion Recognition model.',
+            description = 'Try soft prompting with whisper',
             )
         
     def add_parser_args(self):
 
-
-
         self.parser.add_argument(
             "--utterances_path",
             type=str,
-            required=True,
             default=TRAIN_DEFAULT_SETTINGS["utterances_path"],
             help="Path to the dataset",
         )
 
+        self.parser.add_argument(
+            "--num_workers",
+            type=int,
+            default=TRAIN_DEFAULT_SETTINGS["num_workers"],
+            help="Number of workers to use for data loading",
+        )
+
+        self.parser.add_argument(
+            "--batch_size",
+            type=int,
+            default=TRAIN_DEFAULT_SETTINGS["batch_size"],
+            help="Batch size for training",
+        )
 
         self.parser.add_argument(
             "--seed",
