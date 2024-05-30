@@ -1,4 +1,5 @@
 TRAIN_DEFAULT_SETTINGS = {
+    "utterances_path": "/home/usuaris/veussd/lucas.takanori/lt400/lt400.json",
     "random_seed": 1234,
     "max_epochs": 1,
     "use_weights_and_biases": False,

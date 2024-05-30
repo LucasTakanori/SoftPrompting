@@ -7,8 +7,10 @@ import numpy as np
 from torch import optim
 import os
 from utils import get_memory_info
-
-
+from torch import nn
+from model import PromptASR
+import wandb
+from data import TrainDataset
 
 #region logging
 # Logging
@@ -37,6 +39,7 @@ class Trainer():
 
         self.set_params(trainer_params)
         self.set_device()
+        self.load_training_data()
 
     def set_params(self, input_params):
         '''Set parameters for training.'''
@@ -65,6 +68,7 @@ class Trainer():
             self.gpus_count = 0
         
         logger.info("Device setted.")
+    
     def load_checkpoint(self):
         """Load trained model checkpoints to continue its training."""
         # Load checkpoint
@@ -125,6 +129,92 @@ class Trainer():
 
         logger.info("Random seed setted.")        
 
+    def set_log_file_handler(self):
+
+        '''Set a logging file handler.'''
+
+        if not os.path.exists(self.params.log_file_folder):
+            os.makedirs(self.params.log_file_folder)
+        
+        if self.params.use_weights_and_biases:
+            logger_file_name = f"{self.start_datetime}_{wandb.run.id}_{wandb.run.name}.log"
+        else:
+            logger_file_name = f"{self.start_datetime}.log"
+        logger_file_name = logger_file_name.replace(':', '_').replace(' ', '_').replace('-', '_')
+
+        logger_file_path = os.path.join(self.params.log_file_folder, logger_file_name)
+        logger_file_handler = logging.FileHandler(logger_file_path, mode = 'w')
+        logger_file_handler.setLevel(logging.INFO) # TODO set the file handler level as a input param
+        logger_file_handler.setFormatter(logger_formatter)
+
+        logger.addHandler(logger_file_handler)
+
+
+    def load_training_data(self):
+        logger.info("Loading training data...")
+        training_dataset = TrainDataset(utterances_paths=self.params.utterances_path,
+                                        input_parameters=self.params,
+                                        augmentation_prob=self.params.training_augmentation_prob,
+                                        sample_rate=self.params.sample_rate,
+                                        waveforms_mean=None,
+                                        waveforms_std=None)
+
+
+    def load_network(self):
+        """Load the network."""
+        logger.info("Loading network...")
+
+        # TODO: load the model
+        # Load model class
+        #self.net = Classifier(self.params, self.device)
+        
+        # HACK: naive model
+        self.net = PromptASR(self.params, self.device)
+
+        if self.params.load_checkpoint == True:
+            # TODO
+            self.load_checkpoint_network()
+            
+        # Data Parallelism
+        if torch.cuda.device_count() > 1:
+            logger.info(f"Using {torch.cuda.device_count()} GPUs for training.")
+            self.net = nn.DataParallel(self.net)
+
+        self.net.to(self.device)
+
+        logger.info(self.net)
+
+        # Print the number of trainable parameters
+        self.total_trainable_params = 0
+        parms_dict = {}
+        logger.info(f"Detail of every trainable layer:")
+
+        for name, parameter in self.net.named_parameters():
+
+            layer_name = name.split(".")[1]
+            if layer_name not in parms_dict.keys():
+                parms_dict[layer_name] = 0
+
+            logger.debug(f"name: {name}, layer_name: {layer_name}")
+
+            if not parameter.requires_grad:
+                continue
+            trainable_params = parameter.numel()
+
+            logger.info(f"{name} is trainable with {parameter.numel()} parameters")
+            
+            parms_dict[layer_name] = parms_dict[layer_name] + trainable_params
+            
+            self.total_trainable_params += trainable_params
+        
+        # Check if this is correct
+        logger.info(f"Total trainable parameters per layer:{self.total_trainable_params}")
+        for layer_name in parms_dict.keys():
+            logger.info(f"{layer_name}: {parms_dict[layer_name]}")
+
+        #summary(self.net, (150, self.params.feature_extractor_output_vectors_dimension))
+
+        logger.info(f"Network loaded, total_trainable_params: {self.total_trainable_params}")
 
     def info_mem(self, step = None, logger_level = "INFO"):
 
