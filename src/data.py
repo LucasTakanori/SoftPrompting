@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset
 import logging 
 import copy
+import json
 #region Logging
 
 # Set logging config
@@ -23,24 +24,29 @@ logger.addHandler(logger_stream_handler)
 
 
 class TrainDataset(Dataset):
-    def __init__(self, utterances_paths, input_parameters, random_crop_secs, augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
+    def __init__(self, utterances_paths, augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
         
         self.utterances_paths = utterances_paths
         # I suspect when instantiating two datasets the parameters are overrided
-        # TODO maybe avoid defining self.parameters to reduce memory usage
-        self.parameters = copy.deepcopy(input_parameters) 
         self.augmentation_prob = augmentation_prob #TODO: implement data augmentation
         self.sample_rate = sample_rate
         self.waveforms_mean = waveforms_mean
         self.waveforms_std = waveforms_std
-        self.random_crop_secs = random_crop_secs
-        self.random_crop_samples = int(self.random_crop_secs * self.sample_rate)
         self.num_samples = len(utterances_paths)
+        self.read_json()
         if self.augmentation_prob > 0: self.init_data_augmentator()
-        if self.parameters.text_feature_extractor != 'NoneTextExtractor': self.init_tokenizer()    
+
+    def read_json(self):
+        with open(self.utterances_paths, 'r') as f:
+            for line in f:
+                data = json.loads(line)
+        print(data)
+        
 
     def __len__(self):
         return self.num_samples
 
     def __getitem__(self, index):
         ...        
+
+data = TrainDataset("/home/usuaris/veussd/lucas.takanori/lt400/lt400.json")

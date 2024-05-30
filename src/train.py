@@ -10,6 +10,7 @@ from utils import get_memory_info
 from torch import nn
 from model import PromptASR
 import wandb
+from data import TrainDataset
 
 #region logging
 # Logging
@@ -38,6 +39,7 @@ class Trainer():
 
         self.set_params(trainer_params)
         self.set_device()
+        self.load_training_data()
 
     def set_params(self, input_params):
         '''Set parameters for training.'''
@@ -146,6 +148,17 @@ class Trainer():
         logger_file_handler.setFormatter(logger_formatter)
 
         logger.addHandler(logger_file_handler)
+
+
+    def load_training_data(self):
+        logger.info("Loading training data...")
+        training_dataset = TrainDataset(utterances_paths=self.params.utterances_path,
+                                        input_parameters=self.params,
+                                        augmentation_prob=self.params.training_augmentation_prob,
+                                        sample_rate=self.params.sample_rate,
+                                        waveforms_mean=None,
+                                        waveforms_std=None)
+
 
     def load_network(self):
         """Load the network."""

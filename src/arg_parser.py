@@ -14,6 +14,17 @@ class ArgsParser:
         
     def add_parser_args(self):
 
+
+
+        self.parser.add_argument(
+            "--utterances_path",
+            type=str,
+            required=True,
+            default=TRAIN_DEFAULT_SETTINGS["utterances_path"],
+            help="Path to the dataset",
+        )
+
+
         self.parser.add_argument(
             "--seed",
             type=int,
