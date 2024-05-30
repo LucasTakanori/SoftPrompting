@@ -35,7 +35,6 @@ class TrainDataset(Dataset):
         self.sample_rate = sample_rate
         self.waveforms_mean = waveforms_mean
         self.waveforms_std = waveforms_std
-        self.num_samples = len(utterances_paths)
         self.read_json()
         if self.augmentation_prob > 0: self.init_data_augmentator()
 
@@ -47,7 +46,7 @@ class TrainDataset(Dataset):
         
 
     def __len__(self):
-        return self.num_samples
+        return len(self.utterances)
 
     def init_data_augmentator(self):
         #TODO: Implement data augmentator
