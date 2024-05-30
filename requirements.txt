@@ -8,3 +8,4 @@ typing
 scikit-learn
 openai-whisper
 torchaudio
+wandb
