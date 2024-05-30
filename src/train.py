@@ -12,6 +12,7 @@ from model import PromptASR
 import wandb
 from data import TrainDataset
 from torch.utils.data import DataLoader
+from model import PromptASR
 
 
 #region logging
@@ -42,6 +43,7 @@ class Trainer():
         self.set_params(trainer_params)
         self.set_device()
         self.load_training_data()
+        self.load_network()
         self.initialize_training_variables()
 
     def set_params(self, input_params):
@@ -91,6 +93,7 @@ class Trainer():
         self.checkpoint = torch.load(checkpoint_path, map_location = self.device)
 
         logger.info(f"Checkpoint loaded.") 
+    
 
     def load_optimizer(self):
         logger.info("Loading the optimizer...")
@@ -317,6 +320,7 @@ class Trainer():
         for self.batch_number, batch_data in enumerate(self.training_generator):
             input, transcription = batch_data
 
+            print(transcription)
             input, transcription = input.float().to(self.device), transcription.long().to(self.device)
                       
             if self.batch_number == 0: logger.info(f"input.size(): {input.size()}")
