@@ -2,6 +2,9 @@ from torch.utils.data import Dataset
 import logging 
 import copy
 import json
+import torchaudio
+import torch
+import random
 #region Logging
 
 # Set logging config
@@ -37,16 +40,65 @@ class TrainDataset(Dataset):
         if self.augmentation_prob > 0: self.init_data_augmentator()
 
     def read_json(self):
+        self.utterances = []
         with open(self.utterances_paths, 'r') as f:
             for line in f:
-                data = json.loads(line)
-        print(data)
+                self.utterances.append(json.loads(line)) 
         
 
     def __len__(self):
         return self.num_samples
 
-    def __getitem__(self, index):
-        ...        
+    def init_data_augmentator(self):
+        #TODO: Implement data augmentator
+        ...
 
-data = TrainDataset("/home/usuaris/veussd/lucas.takanori/lt400/lt400.json")
+
+    def normalize(self, waveform):
+
+        if self.waveforms_mean is not None and self.waveforms_std is not None:
+            normalized_waveform = (waveform - self.waveforms_mean) / (self.waveforms_std + 0.000001)
+        else:
+            normalized_waveform = waveform
+
+        return normalized_waveform    
+
+
+    def process_waveform(self, waveform: torch.Tensor, original_sample_rate:int):
+        
+        # Resample
+        if original_sample_rate != self.sample_rate:
+            waveform = torchaudio.functional.resample(
+                waveform = waveform,
+                orig_freq = original_sample_rate, 
+                new_freq = self.sample_rate, 
+                )     
+            
+        # Normalize
+        if self.waveforms_mean is not None:
+            waveform = (waveform - self.waveforms_mean) / self.waveforms_std
+
+        # Apply data augmentation if it falls within the probability
+        if random.uniform(0, 0.999) > 1 - self.augmentation_prob:
+            # TODO: Lucas, the data augmentator master will do this part. 
+            waveform = self.data_augmentator(waveform, self.sample_rate)
+
+        # stereo to mono
+        waveform_mono = torch.mean(waveform, dim=0)
+        waveform = waveform_mono.squeeze(0)
+
+        waveform = self.normalize(waveform)
+
+        return waveform
+
+    def __getitem__(self, index):
+
+        utterance_path = self.utterances[index]["audio_path"]
+        transcription = self.utterances[index]["text"]
+
+        waveform, initial_sample_rate = torchaudio.load(utterance_path)       
+        
+        waveform = self.process_waveform(waveform, initial_sample_rate)
+
+        return waveform, transcription
+
