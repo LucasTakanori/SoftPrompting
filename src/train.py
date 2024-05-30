@@ -11,6 +11,9 @@ from torch import nn
 from model import PromptASR
 import wandb
 from data import TrainDataset
+from torch.utils.data import DataLoader
+from model import PromptASR
+
 
 #region logging
 # Logging
@@ -40,12 +43,20 @@ class Trainer():
         self.set_params(trainer_params)
         self.set_device()
         self.load_training_data()
+        self.load_network()
+        self.initialize_training_variables()
 
     def set_params(self, input_params):
         '''Set parameters for training.'''
 
         logger.info('Setting parameters...')
         self.params = input_params
+
+        # convert the argparse.Namespace() into a dictionary
+        params_dict = vars(self.params)
+        # we print the dictionary in a sorted way:
+        for key, value in sorted(params_dict.items()):
+            print(f"{key}: {value}")        
 
         logger.info('Parameters setted.')
 
@@ -82,6 +93,7 @@ class Trainer():
         self.checkpoint = torch.load(checkpoint_path, map_location = self.device)
 
         logger.info(f"Checkpoint loaded.") 
+    
 
     def load_optimizer(self):
         logger.info("Loading the optimizer...")
@@ -153,11 +165,25 @@ class Trainer():
     def load_training_data(self):
         logger.info("Loading training data...")
         training_dataset = TrainDataset(utterances_paths=self.params.utterances_path,
-                                        input_parameters=self.params,
+                                        random_crop_secs=self.params.random_crop_secs,
                                         augmentation_prob=self.params.training_augmentation_prob,
+                                        padding_type=self.params.padding_type,
+                                        whisper_flavour=self.params.whisper_flavour,
                                         sample_rate=self.params.sample_rate,
                                         waveforms_mean=None,
                                         waveforms_std=None)
+        
+        data_loader_parameters = {
+            "batch_size": self.params.batch_size,
+            "shuffle": True,
+            "num_workers": self.params.num_workers,
+        }
+
+        self.training_generator = DataLoader(
+            training_dataset,
+            **data_loader_parameters,
+        )
+        del training_dataset
 
 
     def load_network(self):
@@ -297,6 +323,7 @@ class Trainer():
         for self.batch_number, batch_data in enumerate(self.training_generator):
             input, transcription = batch_data
 
+            print(transcription)
             input, transcription = input.float().to(self.device), transcription.long().to(self.device)
                       
             if self.batch_number == 0: logger.info(f"input.size(): {input.size()}")
@@ -330,8 +357,6 @@ class Trainer():
 
     def main(self):
         logger.info("Training with the following parameters:")
-        for key, value in self.trainer_params.items():
-            logger.info(f"{key}: {value}")
         self.train(self.starting_epoch, self.params.max_epochs)
         if self.params.use_weights_and_biases: self.save_model_artifact()
         if self.params.use_weights_and_biases: self.delete_version_artifacts()               
