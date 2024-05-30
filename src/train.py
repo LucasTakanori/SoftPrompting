@@ -167,6 +167,8 @@ class Trainer():
         training_dataset = TrainDataset(utterances_paths=self.params.utterances_path,
                                         random_crop_secs=self.params.random_crop_secs,
                                         augmentation_prob=self.params.training_augmentation_prob,
+                                        padding_type=self.params.padding_type,
+                                        whisper_flavour=self.params.whisper_flavour,
                                         sample_rate=self.params.sample_rate,
                                         waveforms_mean=None,
                                         waveforms_std=None)

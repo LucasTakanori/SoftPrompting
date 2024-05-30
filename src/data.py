@@ -7,6 +7,8 @@ import torch
 import random
 from random import randint
 import numpy as np
+from whisper.tokenizer import get_tokenizer
+
 #region Logging
 
 # Set logging config
@@ -29,12 +31,14 @@ logger.addHandler(logger_stream_handler)
 
 
 class TrainDataset(Dataset):
-    def __init__(self, utterances_paths, random_crop_secs, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
+    def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
         
         self.utterances_paths = utterances_paths
         # I suspect when instantiating two datasets the parameters are overrided
         self.augmentation_prob = augmentation_prob #TODO: implement data augmentation
         self.random_crop_secs = random_crop_secs
+        self.whisper_flavour = whisper_flavour
+        self.init_tokenizer()
         self.padding_type = padding_type
         self.sample_rate = sample_rate
         self.random_crop_samples = int(self.random_crop_secs * self.sample_rate)
@@ -52,6 +56,22 @@ class TrainDataset(Dataset):
 
     def __len__(self):
         return len(self.utterances)
+
+    def init_tokenizer(self):
+        logger.info(f"Initializing tokenizer")
+
+        if self.whisper_flavour == "medium":
+            self.tokenizer = get_tokenizer(self.whisper_flavour)
+        else:
+            raise Exception("No tokenizer found for the specified flavour")
+
+
+    def get_transcription_tokens(self, transcription):
+        indexed_tokens = self.tokenizer.encode(transcription)
+        #tokens_tensor = torch.tensor([indexed_tokens])
+        tokens_tensor = torch.tensor(indexed_tokens)
+        return tokens_tensor
+    
 
     def init_data_augmentator(self):
         #TODO: Implement data augmentator
@@ -141,13 +161,17 @@ class TrainDataset(Dataset):
         return waveform
 
     def __getitem__(self, index):
-
+        
+        # We get the waveform and the transcription:
         utterance_path = self.utterances[index]["audio_path"]
         transcription = self.utterances[index]["text"]
 
+        # waveform modifications
         waveform, initial_sample_rate = torchaudio.load(utterance_path)       
-        
         waveform = self.process_waveform(waveform, initial_sample_rate)
 
-        return waveform, transcription
+        # tokenizing transcription:
+        transcription_tokens = self.get_transcription_tokens(transcription)
+
+        return waveform, transcription_tokens
 
