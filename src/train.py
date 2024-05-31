@@ -199,16 +199,19 @@ class Trainer():
         self.net = PromptASR(self.params, self.device)
 
         if self.params.load_checkpoint == True:
-            # TODO
+            # TODO: load the model from the checkpoint if wanted
             self.load_checkpoint_network()
-            
+        
+        # TODO: Fix this 
+        """
         # Data Parallelism
         if torch.cuda.device_count() > 1:
             logger.info(f"Using {torch.cuda.device_count()} GPUs for training.")
             self.net = nn.DataParallel(self.net)
+        """
 
         self.net.to(self.device)
-
+        
         logger.info(self.net)
 
         # Print the number of trainable parameters
@@ -329,6 +332,7 @@ class Trainer():
             if self.batch_number == 0: logger.info(f"input.size(): {input.size()}")
 
         # Calculate the prediction and the loss:
+        logger.info(f"The type of self.net is {type(self.net)}")
         prediction = self.net(input)
         self.loss = self.loss_function(prediction, transcription)
         self.train_loss = self.loss.item()

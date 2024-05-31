@@ -40,6 +40,7 @@ class Whisper():
         self.tokenizer = get_tokenizer(self.parameters.whisper_flavour)
 
     def run_whisper(self, input_tensor, soft_prompts):
+        logger.info("the whisper is running")
         logits = self.asr(input_tensor, soft_prompts)
         return logits
     

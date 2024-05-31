@@ -1,7 +1,6 @@
 import logging
 from torch import nn 
 import torch
-import whisper
 from whisper.tokenizer import get_tokenizer
 from soft_prompts import SoftPrompting
 from asr import Whisper
@@ -30,6 +29,7 @@ class PromptASR(nn.Module):
         self.device = device
         self.parameters = parameters
         self.init_asr()
+        self.init_soft_prompting()
     
     def init_asr(self):
         if self.parameters.asr_model == 'whisper':
@@ -39,6 +39,9 @@ class PromptASR(nn.Module):
         self.soft_prompting = SoftPrompting(self.parameters)
 
     def forward(self, input_tensor) -> torch.Tensor:
+        logger.info("entered the first forward")
         logits = self.asr(input_tensor, self.soft_prompting())   
         return logits
+    
+    
     
