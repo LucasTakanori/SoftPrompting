@@ -69,6 +69,13 @@ class ArgsParser:
             default = TRAIN_DEFAULT_SETTINGS['use_weights_and_biases'],
             help = 'Set to True if you want to use Weights and Biases.',
             )
+        
+        self.parser.add_argument(
+            '--asr_model',
+            type=str,
+            default=TRAIN_DEFAULT_SETTINGS['asr_model'],
+            help='The ASR model to use.',
+        )
 
         self.parser.add_argument(
             '--eval_and_save_best_model_every', 
@@ -108,7 +115,7 @@ class ArgsParser:
         self.parser.add_argument(
             '--whisper_flavour',
             type = str,
-            default = 'TRAIN_DEFAULT_SETTINGS["whisper_flavour"]',
+            default = TRAIN_DEFAULT_SETTINGS["whisper_flavour"],
             help = 'The whisper flavour to use.'
             )         
 
