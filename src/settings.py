@@ -10,8 +10,10 @@ TRAIN_DEFAULT_SETTINGS = {
     "sample_rate": 16000,
     "whisper_flavour": "medium",
     "batch_size": 32,
-    "num_workers": 4,
+    "num_workers": 2,
     "random_crop_secs": 30,
     "padding_type": "zero_pad",
     "asr_model": "whisper",
+    "learning_rate": 1e-4,
+    "tokens_max_length": 100,
 }

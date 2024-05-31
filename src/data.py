@@ -31,7 +31,7 @@ logger.addHandler(logger_stream_handler)
 
 
 class TrainDataset(Dataset):
-    def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
+    def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, tokens_max_length, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
         
         self.utterances_paths = utterances_paths
         # I suspect when instantiating two datasets the parameters are overrided
@@ -42,6 +42,7 @@ class TrainDataset(Dataset):
         self.padding_type = padding_type
         self.sample_rate = sample_rate
         self.random_crop_samples = int(self.random_crop_secs * self.sample_rate)
+        self.tokens_max_length = tokens_max_length
         self.waveforms_mean = waveforms_mean
         self.waveforms_std = waveforms_std
         self.read_json()
@@ -160,12 +161,15 @@ class TrainDataset(Dataset):
 
         return waveform
     
+    def pad_transcription(self, transcription_tokens):
+        """
+        Pads the transcription tokens with zeros to match the maximum length.
+        """
+        pad_left = max(0, self.tokens_max_length - transcription_tokens.shape[-1])
+        padded_transcription_tokens = torch.nn.functional.pad(transcription_tokens, (pad_left, 0), mode = "constant")
 
-    def process_transcription_tokens(self, transcription_tokens):
-        """
-        Resizes all tokens into a fixed size. To do so, the transcription is either truncated or padded with zeros.
-        """
-        return transcription_tokens
+        return padded_transcription_tokens
+
 
     def __getitem__(self, index):
         
@@ -179,7 +183,7 @@ class TrainDataset(Dataset):
 
         # tokenizing transcription:
         transcription_tokens = self.get_transcription_tokens(transcription)
-        transcription_tokens = self.process_transcription_tokens(transcription_tokens)
+        transcription_tokens = self.pad_transcription(transcription_tokens)
 
         return waveform, transcription_tokens
 

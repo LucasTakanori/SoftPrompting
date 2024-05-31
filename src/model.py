@@ -29,10 +29,11 @@ class PromptASR(nn.Module):
         super().__init__()
         self.device = device
         self.parameters = parameters
+        self.init_asr()
     
     def init_asr(self):
         if self.parameters.asr_model == 'whisper':
-            self.asr = Whisper(self.parameters)
+            self.asr = Whisper(self.parameters, self.device)
         
     def init_soft_prompting(self):
         self.soft_prompting = SoftPrompting(self.parameters)

@@ -78,6 +78,13 @@ class ArgsParser:
         )
 
         self.parser.add_argument(
+            '--tokens_max_length',
+            type = int,
+            default = TRAIN_DEFAULT_SETTINGS['tokens_max_length'],
+            help = 'Maximum length of the tokens in the Whisper decoder.',
+            )
+
+        self.parser.add_argument(
             '--eval_and_save_best_model_every', 
             type = int, 
             default = TRAIN_DEFAULT_SETTINGS['eval_and_save_best_model_every'],

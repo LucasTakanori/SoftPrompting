@@ -99,4 +99,3 @@ if __name__ == '__main__':
     xvec = torch.randn((16, 512))
     p_layer = Prompting(dim=1280, prompt_length=8, use_mlp=True, depth=32)(xvec)
     p_layer.reparameterization()
-    print()
