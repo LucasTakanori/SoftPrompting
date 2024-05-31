@@ -324,6 +324,7 @@ class Trainer():
 
         self.net.train()
 
+
         for self.batch_number, batch_data in enumerate(self.training_generator):
             input, transcription = batch_data
 
@@ -331,18 +332,19 @@ class Trainer():
                       
             if self.batch_number == 0: logger.info(f"input.size(): {input.size()}")
 
-        # Calculate the prediction and the loss:
-        prediction = self.net(input)
-        self.loss = self.loss_function(prediction, transcription)
-        self.train_loss = self.loss.item()
+            # Calculate the prediction and the loss:
+            logger.info(f"input.size(): {input.size()}, transcription.size(): {transcription.size()}")
+            prediction = self.net(input)
+            self.loss = self.loss_function(prediction, transcription)
+            self.train_loss = self.loss.item()
 
-        # Backpropagation
-        self.optimizer.zero_grad()
-        self.loss.backward()
-        self.optimizer.step()
+            # Backpropagation
+            self.optimizer.zero_grad()
+            self.loss.backward()
+            self.optimizer.step()
 
-        # Evaluate and save the best model
-        self.eval_and_save_best_model()
+            # Evaluate and save the best model
+            self.eval_and_save_best_model()
 
     def train(self, starting_epoch, max_epochs):
         logger.info(f'Starting training for {self.params.max_epochs} epochs.')
