@@ -9,7 +9,5 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=marc.casals@bsc.es
 
-python src/train.py \
-    --utterances_path "/home/usuaris/veussd/lucas.takanori/lt400/lt400.json",
-    --seed 1234,
+python src/train.py 
     

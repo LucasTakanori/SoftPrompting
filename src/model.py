@@ -39,7 +39,7 @@ class PromptASR(nn.Module):
         self.soft_prompting = SoftPrompting(self.parameters)
 
     def forward(self, input_tensor) -> torch.Tensor:
-        logger.info("entered the first forward")
+        logger.info(f"The input tensor at the beginning shape is {input_tensor.shape}")
         logits = self.asr(input_tensor, self.soft_prompting())   
         return logits
     

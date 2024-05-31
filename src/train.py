@@ -332,7 +332,6 @@ class Trainer():
             if self.batch_number == 0: logger.info(f"input.size(): {input.size()}")
 
         # Calculate the prediction and the loss:
-        logger.info(f"The type of self.net is {type(self.net)}")
         prediction = self.net(input)
         self.loss = self.loss_function(prediction, transcription)
         self.train_loss = self.loss.item()
