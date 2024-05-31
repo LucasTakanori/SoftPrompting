@@ -78,6 +78,13 @@ class ArgsParser:
         )
 
         self.parser.add_argument(
+            '--tokens_max_length',
+            type = int,
+            default = TRAIN_DEFAULT_SETTINGS['tokens_max_length'],
+            help = 'Maximum length of the tokens in the Whisper decoder.',
+            )
+
+        self.parser.add_argument(
             '--eval_and_save_best_model_every', 
             type = int, 
             default = TRAIN_DEFAULT_SETTINGS['eval_and_save_best_model_every'],
@@ -118,6 +125,27 @@ class ArgsParser:
             default = TRAIN_DEFAULT_SETTINGS["whisper_flavour"],
             help = 'The whisper flavour to use.'
             )         
+        
+        self.parser.add_argument(
+            '--prompt_depth',
+            type = int,
+            default = TRAIN_DEFAULT_SETTINGS["prompt_depth"],
+            help = 'The depth of the prompting model.'
+        )
+
+        self.parser.add_argument(
+            '--prompt_length',
+            type = int,
+            default = TRAIN_DEFAULT_SETTINGS["prompt_length"],
+            help = 'The length of the prompting model.'
+        )
+
+        self.parser.add_argument(
+            '--prompt_dim',
+            type = int,
+            default = TRAIN_DEFAULT_SETTINGS["prompt_dim"],
+            help = 'The dimension of the prompting model.'
+        )
 
     def main(self):
         self.add_parser_args()

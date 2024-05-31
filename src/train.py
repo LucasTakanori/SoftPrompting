@@ -166,6 +166,7 @@ class Trainer():
         logger.info("Loading training data...")
         training_dataset = TrainDataset(utterances_paths=self.params.utterances_path,
                                         random_crop_secs=self.params.random_crop_secs,
+                                        tokens_max_length=self.params.tokens_max_length,
                                         augmentation_prob=self.params.training_augmentation_prob,
                                         padding_type=self.params.padding_type,
                                         whisper_flavour=self.params.whisper_flavour,
@@ -198,16 +199,19 @@ class Trainer():
         self.net = PromptASR(self.params, self.device)
 
         if self.params.load_checkpoint == True:
-            # TODO
+            # TODO: load the model from the checkpoint if wanted
             self.load_checkpoint_network()
-            
+        
+        # TODO: Fix this 
+        """
         # Data Parallelism
         if torch.cuda.device_count() > 1:
             logger.info(f"Using {torch.cuda.device_count()} GPUs for training.")
             self.net = nn.DataParallel(self.net)
+        """
 
         self.net.to(self.device)
-
+        
         logger.info(self.net)
 
         # Print the number of trainable parameters
@@ -320,26 +324,27 @@ class Trainer():
 
         self.net.train()
 
+
         for self.batch_number, batch_data in enumerate(self.training_generator):
             input, transcription = batch_data
 
-            print(transcription)
             input, transcription = input.float().to(self.device), transcription.long().to(self.device)
                       
             if self.batch_number == 0: logger.info(f"input.size(): {input.size()}")
 
-        # Calculate the prediction and the loss:
-        prediction = self.net(input)
-        self.loss = self.loss_function(prediction, transcription)
-        self.train_loss = self.loss.item()
+            # Calculate the prediction and the loss:
+            logger.info(f"input.size(): {input.size()}, transcription.size(): {transcription.size()}")
+            prediction = self.net(input)
+            self.loss = self.loss_function(prediction, transcription)
+            self.train_loss = self.loss.item()
 
-        # Backpropagation
-        self.optimizer.zero_grad()
-        self.loss.backward()
-        self.optimizer.step()
+            # Backpropagation
+            self.optimizer.zero_grad()
+            self.loss.backward()
+            self.optimizer.step()
 
-        # Evaluate and save the best model
-        self.eval_and_save_best_model()
+            # Evaluate and save the best model
+            self.eval_and_save_best_model()
 
     def train(self, starting_epoch, max_epochs):
         logger.info(f'Starting training for {self.params.max_epochs} epochs.')
