@@ -159,6 +159,13 @@ class TrainDataset(Dataset):
         waveform = self.normalize(waveform)
 
         return waveform
+    
+
+    def process_transcription_tokens(self, transcription_tokens):
+        """
+        Resizes all tokens into a fixed size. To do so, the transcription is either truncated or padded with zeros.
+        """
+        return transcription_tokens
 
     def __getitem__(self, index):
         
@@ -172,6 +179,7 @@ class TrainDataset(Dataset):
 
         # tokenizing transcription:
         transcription_tokens = self.get_transcription_tokens(transcription)
+        transcription_tokens = self.process_transcription_tokens(transcription_tokens)
 
         return waveform, transcription_tokens
 
