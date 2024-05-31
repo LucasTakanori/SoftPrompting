@@ -13,4 +13,5 @@ TRAIN_DEFAULT_SETTINGS = {
     "num_workers": 4,
     "random_crop_secs": 30,
     "padding_type": "zero_pad",
+    "asr_model": "whisper",
 }
