@@ -205,7 +205,7 @@ class TrainDataset(Dataset):
         if self.speech_representation == "mel":
             mel = self._calculate_mel(waveform)
             return mel
-        
+            
         else:
             raise Exception("No speech representation found.")
     
@@ -228,9 +228,4 @@ class TrainDataset(Dataset):
 
         # change to speech representation (ie mel-spectrogram)
         utterance = self.process_utterance(waveform)
-
-        # The shape is [batch_size, sampling_rate], TRANSRIPTION TODO
         return utterance, transcription_tokens
-
-
-
