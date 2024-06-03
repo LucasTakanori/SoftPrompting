@@ -185,6 +185,6 @@ class TrainDataset(Dataset):
         transcription_tokens = self.get_transcription_tokens(transcription)
         transcription_tokens = self.pad_transcription(transcription_tokens)
 
-
+        # The shape is [batch_size, sampling_rate], TRANSRIPTION TODO
         return waveform, transcription_tokens
 
