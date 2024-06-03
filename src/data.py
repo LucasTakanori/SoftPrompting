@@ -233,19 +233,4 @@ class TrainDataset(Dataset):
         return utterance, transcription_tokens
 
 
-dataset = TrainDataset(
-    utterances_paths = "/home/usuaris/veussd/lucas.takanori/lt400/lt400.json",
-    whisper_flavour = "medium",
-    random_crop_secs = 30,
-    context_len = 100,
-    tokens_max_length = 100,
-    speech_representation = "mel",
-    nmels = 80,
-    padding_type ="zero_pad",
-    augmentation_prob = 0,
-    sample_rate = 16000,
-    waveforms_mean = None,
-    waveforms_std = None
-    )
 
-print((dataset[0])[0].shape)
