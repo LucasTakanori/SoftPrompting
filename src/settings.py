@@ -21,4 +21,5 @@ TRAIN_DEFAULT_SETTINGS = {
     "prompt_dim": 512,
     "speech_representation": "mel",
     "nmels": 80,
+    "context_len": 100,
 }

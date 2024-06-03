@@ -3,11 +3,14 @@ import logging
 import copy
 import json
 import torchaudio
+from whisper.audio import CHUNK_LENGTH, N_FRAMES, log_mel_spectrogram, pad_or_trim, load_audio
 import torch
 import random
 from random import randint
 import numpy as np
 from whisper.tokenizer import get_tokenizer
+from typing import List, Optional, Tuple, AnyStr
+
 
 #region Logging
 
@@ -31,12 +34,16 @@ logger.addHandler(logger_stream_handler)
 
 
 class TrainDataset(Dataset):
-    def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, tokens_max_length, speech_representation, nmels=80, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
+    def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, context_len, tokens_max_length, speech_representation, nmels=80, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
         
         self.utterances_paths = utterances_paths
         # I suspect when instantiating two datasets the parameters are overrided
         self.augmentation_prob = augmentation_prob #TODO: implement data augmentation
         self.random_crop_secs = random_crop_secs
+        self.speech_representation = speech_representation
+        self.nmels = nmels
+        self.context_len = context_len
+        self.num_frames_per_second = N_FRAMES / CHUNK_LENGTH # HACK whisper hardcoded
         self.whisper_flavour = whisper_flavour
         self.init_tokenizer()
         self.padding_type = padding_type
@@ -58,6 +65,7 @@ class TrainDataset(Dataset):
     def __len__(self):
         return len(self.utterances)
 
+    #region transcription
     def init_tokenizer(self):
         logger.info(f"Initializing tokenizer")
 
@@ -72,8 +80,18 @@ class TrainDataset(Dataset):
         #tokens_tensor = torch.tensor([indexed_tokens])
         tokens_tensor = torch.tensor(indexed_tokens)
         return tokens_tensor
-    
 
+    def pad_transcription(self, transcription_tokens):
+        """
+        Pads the transcription tokens with zeros to match the maximum length.
+        """
+        pad_left = max(0, self.tokens_max_length - transcription_tokens.shape[-1])
+        padded_transcription_tokens = torch.nn.functional.pad(transcription_tokens, (pad_left, 0), mode = "constant")
+
+        return padded_transcription_tokens
+    #endregion
+
+    #region waveform
     def init_data_augmentator(self):
         #TODO: Implement data augmentator
         ...
@@ -161,21 +179,38 @@ class TrainDataset(Dataset):
 
         return waveform
     
-    def process_utterance(self):
+    #endregion
+
+    #region utterance
+
+    def _calculate_mel(self, audio_path: str) -> torch.Tensor:
+        mel = log_mel_spectrogram(audio_path)
+        ## insert some zero frames to hold the places for prompts
+        n_frames = (1 + self.context_len) * 2  # 1 speaker embedding + 8 soft prompts, the down-sampling factor is 2 in encoder conv layers
+        place_holder = torch.zeros((mel.size(0), n_frames))
+        mel = torch.concat([place_holder, mel], dim=1)
+        ###
+        mel = pad_or_trim(mel, N_FRAMES)
+        
+        return mel
+    
+    def process_utterance(self, waveform):
         """
         Processing the waveform to create speech representations.
         """
+        if self.speech_representation == "waveform":
+            # The trivial is to return this waveform.
+            return waveform
 
+        if self.speech_representation == "mel":
+            mel = self._calculate_mel(waveform)
+            return mel
+        
+        else:
+            raise Exception("No speech representation found.")
     
-    def pad_transcription(self, transcription_tokens):
-        """
-        Pads the transcription tokens with zeros to match the maximum length.
-        """
-        pad_left = max(0, self.tokens_max_length - transcription_tokens.shape[-1])
-        padded_transcription_tokens = torch.nn.functional.pad(transcription_tokens, (pad_left, 0), mode = "constant")
-
-        return padded_transcription_tokens
-
+    #endregion
+    
 
     def __getitem__(self, index):
         
@@ -191,6 +226,26 @@ class TrainDataset(Dataset):
         transcription_tokens = self.get_transcription_tokens(transcription)
         transcription_tokens = self.pad_transcription(transcription_tokens)
 
-        # The shape is [batch_size, sampling_rate], TRANSRIPTION TODO
-        return waveform, transcription_tokens
+        # change to speech representation (ie mel-spectrogram)
+        utterance = self.process_utterance(waveform)
 
+        # The shape is [batch_size, sampling_rate], TRANSRIPTION TODO
+        return utterance, transcription_tokens
+
+
+dataset = TrainDataset(
+    utterances_paths = "/home/usuaris/veussd/lucas.takanori/lt400/lt400.json",
+    whisper_flavour = "medium",
+    random_crop_secs = 30,
+    context_len = 100,
+    tokens_max_length = 100,
+    speech_representation = "mel",
+    nmels = 80,
+    padding_type ="zero_pad",
+    augmentation_prob = 0,
+    sample_rate = 16000,
+    waveforms_mean = None,
+    waveforms_std = None
+    )
+
+print((dataset[0])[0].shape)

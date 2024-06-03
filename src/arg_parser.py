@@ -161,6 +161,13 @@ class ArgsParser:
             help = 'The number of mels windows used for creating mel-spectrogram'
         )
 
+        self.parser.add_argument(
+            '--context_len',
+            type = int,
+            default = TRAIN_DEFAULT_SETTINGS["context_len"],
+            help = 'The context len of the tokens. In the code it is represented also as the context len of the softprompts'
+        )
+
     def main(self):
         self.add_parser_args()
         self.arguments = self.parser.parse_args()
