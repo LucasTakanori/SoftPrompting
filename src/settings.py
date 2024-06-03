@@ -19,4 +19,6 @@ TRAIN_DEFAULT_SETTINGS = {
     "prompt_depth": 32,
     "prompt_length": 100,
     "prompt_dim": 512,
+    "speech_representation": "mel",
+    "nmels": 80,
 }

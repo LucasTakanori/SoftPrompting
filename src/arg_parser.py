@@ -147,6 +147,20 @@ class ArgsParser:
             help = 'The dimension of the prompting model.'
         )
 
+        self.parser.add_argument(
+            '--speech_representation',
+            type = str,
+            default = TRAIN_DEFAULT_SETTINGS["speech_representation"],
+            help = 'The processing done to the audiofile.'
+        )
+
+        self.parser.add_argument(
+            '--nmels',
+            type = int, 
+            default = TRAIN_DEFAULT_SETTINGS["nmels"],
+            help = 'The number of mels windows used for creating mel-spectrogram'
+        )
+
     def main(self):
         self.add_parser_args()
         self.arguments = self.parser.parse_args()

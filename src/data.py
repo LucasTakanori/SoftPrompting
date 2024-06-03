@@ -31,7 +31,7 @@ logger.addHandler(logger_stream_handler)
 
 
 class TrainDataset(Dataset):
-    def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, tokens_max_length, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
+    def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, tokens_max_length, speech_representation, nmels=80, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
         
         self.utterances_paths = utterances_paths
         # I suspect when instantiating two datasets the parameters are overrided
@@ -160,6 +160,12 @@ class TrainDataset(Dataset):
         waveform = self.normalize(waveform)
 
         return waveform
+    
+    def process_utterance(self):
+        """
+        Processing the waveform to create speech representations.
+        """
+
     
     def pad_transcription(self, transcription_tokens):
         """
