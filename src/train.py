@@ -329,15 +329,15 @@ class Trainer():
 
 
         for self.batch_number, batch_data in enumerate(self.training_generator):
-            input, transcription = batch_data
+            input, transcription, decoder_input = batch_data
 
-            input, transcription = input.to(self.device), transcription.to(self.device)
+            input, transcription, decoder_input = input.to(self.device), transcription.to(self.device), decoder_input.to(self.device)
                       
             if self.batch_number == 0: logger.info(f"input.size(): {input.size()}")
 
             # Calculate the prediction and the loss:
             logger.info(f"input.size(): {input.size()}, transcription.size(): {transcription.size()}")
-            prediction = self.net(input)
+            prediction = self.net(input, decoder_input)
             self.loss = self.loss_function(prediction, transcription)
             self.train_loss = self.loss.item()
 

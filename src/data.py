@@ -42,6 +42,7 @@ class TrainDataset(Dataset):
         self.random_crop_secs = random_crop_secs
         self.speech_representation = speech_representation
         self.nmels = nmels
+        self.language = "ca" # HACK whisper hardcoded
         self.context_len = context_len
         self.num_frames_per_second = N_FRAMES / CHUNK_LENGTH # HACK whisper hardcoded
         self.whisper_flavour = whisper_flavour
@@ -210,6 +211,36 @@ class TrainDataset(Dataset):
             raise Exception("No speech representation found.")
     
     #endregion
+
+    #region decoder input
+    # TODO: Understand this.
+    def _get_prompt_tokens(self, prompt: str) -> List[int]:
+        if len(prompt) > 0 and torch.rand(1) < self.prompt_use_rate:
+            prompt_tokens = self._encode_text_with_timestamps(prompt)[-self.max_prompt_length :]
+            prompt_tokens = [self.tokenizer.sot_prev] + prompt_tokens
+        else:
+            prompt_tokens = []
+
+        return prompt_tokens
+
+
+    def _get_special_tokens(
+        self, is_text_empty: bool, language: str, no_timestamps: bool
+    ) -> List[int]:
+        if is_text_empty:
+            special_tokens = [self.tokenizer.sot, self.tokenizer.no_speech]
+        else:
+            special_tokens = [
+                self.tokenizer.sot,
+                self.tokenizer.special_tokens[f"<|{language}|>"],
+                self.tokenizer.special_tokens["<|transcribe|>"],
+            ]
+            if no_timestamps:
+                special_tokens.append(self.tokenizer.no_timestamps)
+
+        return special_tokens
+    
+    #endregion
     
 
     def __getitem__(self, index):
@@ -226,6 +257,16 @@ class TrainDataset(Dataset):
         transcription_tokens = self.get_transcription_tokens(transcription)
         transcription_tokens = self.pad_transcription(transcription_tokens)
 
+        # decoder input
+        prompt_tokens = self._get_prompt_tokens('@' * (self.context_len))
+        is_text_empty = len(transcription_tokens) == 0
+        # HACK will change later. For now, we are not using timestamps
+        no_timestamps = False
+        special_tokens = self._get_special_tokens(is_text_empty, self.language, no_timestamps)
+        decoder_input = prompt_tokens + special_tokens + transcription_tokens
+        decoder_input = torch.tensor(decoder_input, dtype=torch.long)
+
+
         # change to speech representation (ie mel-spectrogram)
         utterance = self.process_utterance(waveform)
-        return utterance, transcription_tokens
+        return utterance, transcription_tokens, decoder_input
