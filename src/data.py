@@ -34,6 +34,16 @@ logger.addHandler(logger_stream_handler)
 
 
 class TrainDataset(Dataset):
+
+    """
+    The main goal of this class is, given an index, to provide the audio utterance and transcription of the audio.
+
+    However, because of the encoder-decoder architectures, we need to provide the decoder input as well.
+
+    In the case of Whisper, the decoder input is the concatenation of the special tokens, the transcription tokens. 
+
+    Focus on the __getitem__ method to understand the process and the needs of the problem.
+    """
     def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, context_len, tokens_max_length, speech_representation, nmels=80, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
         
         self.utterances_paths = utterances_paths
@@ -214,14 +224,7 @@ class TrainDataset(Dataset):
 
     #region decoder input
     # TODO: Understand this.
-    def _get_prompt_tokens(self, prompt: str) -> List[int]:
-        if len(prompt) > 0 and torch.rand(1) < self.prompt_use_rate:
-            prompt_tokens = self._encode_text_with_timestamps(prompt)[-self.max_prompt_length :]
-            prompt_tokens = [self.tokenizer.sot_prev] + prompt_tokens
-        else:
-            prompt_tokens = []
 
-        return prompt_tokens
 
 
     def _get_special_tokens(
@@ -258,12 +261,12 @@ class TrainDataset(Dataset):
         transcription_tokens = self.pad_transcription(transcription_tokens)
 
         # decoder input
-        prompt_tokens = self._get_prompt_tokens('@' * (self.context_len))
         is_text_empty = len(transcription_tokens) == 0
         # HACK will change later. For now, we are not using timestamps
-        no_timestamps = False
+        no_timestamps = True
         special_tokens = self._get_special_tokens(is_text_empty, self.language, no_timestamps)
-        decoder_input = prompt_tokens + special_tokens + transcription_tokens
+        # list with all the input of the decoder
+        decoder_input =  special_tokens + transcription_tokens
         decoder_input = torch.tensor(decoder_input, dtype=torch.long)
 
 
