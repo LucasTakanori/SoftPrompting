@@ -169,6 +169,8 @@ class Trainer():
                                         tokens_max_length=self.params.tokens_max_length,
                                         speech_representation=self.params.speech_representation,
                                         nmels=self.params.nmels,
+                                        prompt_use_rate= 0.5, #HACK learn wtf is this
+                                        max_prompt_length=223, #HACK I have other metric for this. Unify
                                         context_len=self.params.context_len,
                                         augmentation_prob=self.params.training_augmentation_prob,
                                         padding_type=self.params.padding_type,
