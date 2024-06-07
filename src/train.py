@@ -44,6 +44,7 @@ class Trainer():
         self.set_device()
         self.load_training_data()
         self.load_network()
+        self.load_loss_function()
         self.initialize_training_variables()
 
     def set_params(self, input_params):
@@ -128,6 +129,14 @@ class Trainer():
         self.params = self.checkpoint["settings"]
         logger.info("Checkpoint parameters loaded!")
  
+    def load_loss_function(self):
+        logger.info("Loading the loss function...")
+
+        if self.params.loss == "CrossEntropy":
+            # The nn.CrossEntropyLoss() criterion combines nn.LogSoftmax() and nn.NLLLoss() in one single class
+            logger.info("Using CrossEntropyLoss() as loss function.")
+            self.loss_function = nn.CrossEntropyLoss()    
+    
     def set_random_seed(self):
 
         logger.info("Setting random seed...")

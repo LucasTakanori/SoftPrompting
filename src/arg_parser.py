@@ -29,6 +29,13 @@ class ArgsParser:
         )
 
         self.parser.add_argument(
+            "--loss",
+            type=str,
+            default=TRAIN_DEFAULT_SETTINGS["loss"],
+            help="Loss function to use",
+        )
+
+        self.parser.add_argument(
             "--batch_size",
             type=int,
             default=TRAIN_DEFAULT_SETTINGS["batch_size"],
