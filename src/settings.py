@@ -9,7 +9,7 @@ TRAIN_DEFAULT_SETTINGS = {
     "evaluation_augmentation_prob": 0,
     "sample_rate": 16000,
     "whisper_flavour": "medium",
-    "batch_size": 32,
+    "batch_size": 16,
     "num_workers": 2,
     "random_crop_secs": 30,
     "padding_type": "zero_pad",
@@ -19,4 +19,7 @@ TRAIN_DEFAULT_SETTINGS = {
     "prompt_depth": 32,
     "prompt_length": 100,
     "prompt_dim": 512,
+    "speech_representation": "mel",
+    "nmels": 80,
+    "context_len": 100,
 }

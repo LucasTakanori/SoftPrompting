@@ -1,4 +1,5 @@
 import logging
+import torch
 import whisper
 from whisper.tokenizer import get_tokenizer
 
@@ -39,11 +40,14 @@ class Whisper():
         self.asr = whisper.load_model(self.parameters.whisper_flavour, self.device)
         self.tokenizer = get_tokenizer(self.parameters.whisper_flavour)
 
-    def run_whisper(self, input_tensor, soft_prompts):
-        logger.info(f"The input tensor that enters whisper is {input_tensor.shape}")
-        logger.info("the whisper is running")
-        logits = self.asr(input_tensor, soft_prompts)
+    def run_whisper(self, input_tensor, decoder_input, soft_prompts):
+        input_concat = torch.cat((input_tensor, soft_prompts), dim=2)
+        logger.info(f"Input_tensor shape: {input_tensor.shape}")
+        logger.info(f"soft_prompts shape: {soft_prompts.shape}")
+        logger.info(f"input_concat shape: {input_concat.shape}")
+        logits = self.asr(input_concat, decoder_input)
+
         return logits
     
-    def __call__(self, input_tensor, soft_prompts):
-        return self.run_whisper(input_tensor, soft_prompts)
+    def __call__(self, input_tensor, decoder_input,  soft_prompts):
+        return self.run_whisper(input_tensor, decoder_input, soft_prompts)

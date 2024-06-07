@@ -3,11 +3,15 @@ import logging
 import copy
 import json
 import torchaudio
+from whisper.audio import CHUNK_LENGTH, N_FRAMES, log_mel_spectrogram, pad_or_trim, load_audio
 import torch
 import random
 from random import randint
 import numpy as np
 from whisper.tokenizer import get_tokenizer
+from typing import List, Optional, Tuple, AnyStr
+import re
+
 
 #region Logging
 
@@ -31,15 +35,33 @@ logger.addHandler(logger_stream_handler)
 
 
 class TrainDataset(Dataset):
-    def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, tokens_max_length, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
+
+    """
+    The main goal of this class is, given an index, to provide the audio utterance and transcription of the audio.
+
+    However, because of the encoder-decoder architectures, we need to provide the decoder input as well.
+
+    In the case of Whisper, the decoder input is the concatenation of the special tokens, the transcription tokens. 
+
+    Focus on the __getitem__ method to understand the process and the needs of the problem.
+    """
+    def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, context_len, tokens_max_length, speech_representation, prompt_use_rate, max_prompt_length, nmels=80, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
         
         self.utterances_paths = utterances_paths
         # I suspect when instantiating two datasets the parameters are overrided
         self.augmentation_prob = augmentation_prob #TODO: implement data augmentation
         self.random_crop_secs = random_crop_secs
+        self.speech_representation = speech_representation
+        self.nmels = nmels
+        self.language = "ca" # HACK whisper hardcoded
+        self.context_len = context_len
+        self.max_prompt_length = max_prompt_length
+        self.num_frames_per_second = N_FRAMES / CHUNK_LENGTH # HACK whisper hardcoded
         self.whisper_flavour = whisper_flavour
         self.init_tokenizer()
+        self.timestamp_pattern = re.compile(r"(<\|[123]?[0-9]\.[0-9][0-9]\|>)")
         self.padding_type = padding_type
+        self.prompt_use_rate = prompt_use_rate
         self.sample_rate = sample_rate
         self.random_crop_samples = int(self.random_crop_secs * self.sample_rate)
         self.tokens_max_length = tokens_max_length
@@ -58,6 +80,7 @@ class TrainDataset(Dataset):
     def __len__(self):
         return len(self.utterances)
 
+    #region transcription
     def init_tokenizer(self):
         logger.info(f"Initializing tokenizer")
 
@@ -72,8 +95,18 @@ class TrainDataset(Dataset):
         #tokens_tensor = torch.tensor([indexed_tokens])
         tokens_tensor = torch.tensor(indexed_tokens)
         return tokens_tensor
-    
 
+    def pad_transcription(self, transcription_tokens):
+        """
+        Pads the transcription tokens with zeros to match the maximum length.
+        """
+        pad_left = max(0, self.tokens_max_length - transcription_tokens.shape[-1])
+        padded_transcription_tokens = torch.nn.functional.pad(transcription_tokens, (pad_left, 0), mode = "constant")
+
+        return padded_transcription_tokens
+    #endregion
+
+    #region waveform
     def init_data_augmentator(self):
         #TODO: Implement data augmentator
         ...
@@ -161,15 +194,117 @@ class TrainDataset(Dataset):
 
         return waveform
     
-    def pad_transcription(self, transcription_tokens):
-        """
-        Pads the transcription tokens with zeros to match the maximum length.
-        """
-        pad_left = max(0, self.tokens_max_length - transcription_tokens.shape[-1])
-        padded_transcription_tokens = torch.nn.functional.pad(transcription_tokens, (pad_left, 0), mode = "constant")
+    #endregion
 
-        return padded_transcription_tokens
+    #region utterance
 
+    def _calculate_mel(self, audio_path: str) -> torch.Tensor:
+        mel = log_mel_spectrogram(audio_path)
+        ## insert some zero frames to hold the places for prompts
+        n_frames = (1 + self.context_len) * 2  # 1 speaker embedding + 8 soft prompts, the down-sampling factor is 2 in encoder conv layers
+        place_holder = torch.zeros((mel.size(0), n_frames))
+        mel = torch.concat([place_holder, mel], dim=1)
+        ###
+        mel = pad_or_trim(mel, N_FRAMES)
+        
+        return mel
+    
+    def process_utterance(self, waveform):
+        """
+        Processing the waveform to create speech representations.
+        """
+        if self.speech_representation == "waveform":
+            # The trivial is to return this waveform.
+            return waveform
+
+        if self.speech_representation == "mel":
+            mel = self._calculate_mel(waveform)
+            return mel
+            
+        else:
+            raise Exception("No speech representation found.")
+    
+    #endregion
+
+    #region decoder input
+    # TODO: Understand this.
+
+    def _encode_text_with_timestamps(self, text: str) -> List[int]:
+        """
+        Encodes the given text with timestamps into a list of tokens.
+
+        Args:
+            text (str): The input text to be encoded.
+
+        Returns:
+            List[int]: The list of encoded tokens.
+
+        Raises:
+            ValueError: If an invalid timestamp is encountered.
+
+        """
+        parts = self.timestamp_pattern.split(text)
+        parts = [token for token in parts if token != ""]
+        tokens = []
+        for part in parts:
+            if self.timestamp_pattern.fullmatch(part) is not None:
+                timestamp = float(part[2:-2])
+
+                # timestamp must be in the range [0, 30] and be a multiple of 0.02 seconds
+                if timestamp < 0 or timestamp > 30 or round(timestamp * 100) % 2 != 0:
+                    raise ValueError(f"Invalid timestamp: {timestamp}")
+
+                token = self.tokenizer.timestamp_begin + round(timestamp * 100) // 2
+                tokens.append(token)
+            else:
+                tokens.extend(self.tokenizer.encode(part))
+
+        return tokens
+    def _get_partial_segment_start(self, tokens: List[int]) -> Optional[float]:
+        if (
+            len(tokens) >= 2
+            and tokens[-2] >= self.tokenizer.timestamp_begin
+            and tokens[-1] >= self.tokenizer.timestamp_begin
+        ):  # if the last token is a start time token
+            return (tokens[-1] - self.tokenizer.timestamp_begin) * 0.02
+        else:
+            return None
+
+    def _get_text_tokens(self, text: str, no_timestamps: bool) -> Tuple[List[int], Optional[float]]:
+        text_tokens = self._encode_text_with_timestamps(text)
+        next_partial_segment_start = self._get_partial_segment_start(text_tokens)
+        if no_timestamps:
+            text_tokens = list(filter(lambda x: x < self.tokenizer.timestamp_begin, text_tokens))
+
+        return text_tokens, next_partial_segment_start
+    
+    def _get_prompt_tokens(self, prompt: str) -> List[int]:
+        if len(prompt) > 0 and torch.rand(1) < self.prompt_use_rate:
+            prompt_tokens = self._encode_text_with_timestamps(prompt)[-self.max_prompt_length :]
+            prompt_tokens = [self.tokenizer.sot_prev] + prompt_tokens
+        else:
+            prompt_tokens = []
+
+        return prompt_tokens
+
+    def _get_special_tokens(
+        self, is_text_empty: bool, language: str, no_timestamps: bool
+    ) -> List[int]:
+        if is_text_empty:
+            special_tokens = [self.tokenizer.sot, self.tokenizer.no_speech]
+        else:
+            special_tokens = [
+                self.tokenizer.sot,
+                self.tokenizer.special_tokens[f"<|{language}|>"],
+                self.tokenizer.special_tokens["<|transcribe|>"],
+            ]
+            if no_timestamps:
+                special_tokens.append(self.tokenizer.no_timestamps)
+
+        return special_tokens
+    
+    #endregion
+    
 
     def __getitem__(self, index):
         
@@ -185,6 +320,19 @@ class TrainDataset(Dataset):
         transcription_tokens = self.get_transcription_tokens(transcription)
         transcription_tokens = self.pad_transcription(transcription_tokens)
 
+        # decoder input
+        # HACK will change later. For now, we are not using timestamps
+        no_timestamps = True
+        prompt_tokens = self._get_prompt_tokens('@' * (self.context_len))  # hole the place where will be filled with speaker embedding.
+        text_tokens, next_partial_segment_start = self._get_text_tokens(transcription_tokens.lower(), no_timestamps)
+        is_text_empty = len(text_tokens) == 0        
+        special_tokens = self._get_special_tokens(is_text_empty, self.language, no_timestamps)
+        # list with all the input of the decoder
+        decoder_input =  prompt_tokens + special_tokens + text_tokens
+        decoder_input = torch.tensor(decoder_input, dtype=torch.long)
 
-        return waveform, transcription_tokens
+
+        # change to speech representation (ie mel-spectrogram)
+        utterance = self.process_utterance(waveform)
+        return utterance, transcription_tokens, decoder_input
 

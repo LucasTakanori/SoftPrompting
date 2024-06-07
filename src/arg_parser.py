@@ -146,6 +146,27 @@ class ArgsParser:
             default = TRAIN_DEFAULT_SETTINGS["prompt_dim"],
             help = 'The dimension of the prompting model.'
         )
+        self.parser.add_argument(
+            '--speech_representation',
+            type = str,
+            default = TRAIN_DEFAULT_SETTINGS["speech_representation"],
+            help = 'The processing done to the audiofile.'
+        )
+
+        self.parser.add_argument(
+            '--nmels',
+            type = int, 
+            default = TRAIN_DEFAULT_SETTINGS["nmels"],
+            help = 'The number of mels windows used for creating mel-spectrogram'
+        )
+
+        self.parser.add_argument(
+            '--context_len',
+            type = int,
+            default = TRAIN_DEFAULT_SETTINGS["context_len"],
+            help = 'The context len of the tokens. In the code it is represented also as the context len of the softprompts'
+        )
+
 
     def main(self):
         self.add_parser_args()
