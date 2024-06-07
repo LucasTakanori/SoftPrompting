@@ -46,6 +46,7 @@ class Whisper():
         logger.info(f"soft_prompts shape: {soft_prompts.shape}")
         logger.info(f"input_concat shape: {input_concat.shape}")
         logits = self.asr(input_concat, decoder_input)
+
         return logits
     
     def __call__(self, input_tensor, decoder_input,  soft_prompts):
