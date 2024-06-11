@@ -306,7 +306,7 @@ class TrainDataset(Dataset):
     #endregion
     
 
-    def __getitem__(self, index):
+    def __getitem__(self, index)-> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         
         # We get the waveform and the transcription:
         utterance_path = self.utterances[index]["audio_path"]
@@ -324,15 +324,18 @@ class TrainDataset(Dataset):
         # HACK will change later. For now, we are not using timestamps
         no_timestamps = True
         prompt_tokens = self._get_prompt_tokens('@' * (self.context_len))  # hole the place where will be filled with speaker embedding.
-        text_tokens, next_partial_segment_start = self._get_text_tokens(transcription_tokens.lower(), no_timestamps)
+        text_tokens, next_partial_segment_start = self._get_text_tokens(transcription.lower(), no_timestamps)
         is_text_empty = len(text_tokens) == 0        
         special_tokens = self._get_special_tokens(is_text_empty, self.language, no_timestamps)
         # list with all the input of the decoder
-        decoder_input =  prompt_tokens + special_tokens + text_tokens
-        decoder_input = torch.tensor(decoder_input, dtype=torch.long)
-
+        # logger.info(f"shape of prompt_tokens: {len(prompt_tokens)}, special_tokens: {len(special_tokens)}, text_tokens: {len(text_tokens)}")
+        #TODO: prompt tokens are not being used.
+        # decoder_input =  special_tokens + transcription_tokens.tolist() 
+        special_tokens = torch.tensor(special_tokens, dtype=torch.long)
+        decoder_input = torch.cat((special_tokens, transcription_tokens), dim=0)
 
         # change to speech representation (ie mel-spectrogram)
         utterance = self.process_utterance(waveform)
+
         return utterance, transcription_tokens, decoder_input
 

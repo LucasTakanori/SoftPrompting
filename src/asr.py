@@ -45,7 +45,7 @@ class Whisper():
         logger.info(f"Input_tensor shape: {input_tensor.shape}")
         logger.info(f"soft_prompts shape: {soft_prompts.shape}")
         logger.info(f"input_concat shape: {input_concat.shape}")
-        logits = self.asr(input_concat, decoder_input)
+        logits = self.asr(input_tensor, decoder_input)
 
         return logits
     
