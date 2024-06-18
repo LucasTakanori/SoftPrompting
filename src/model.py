@@ -45,11 +45,15 @@ class PromptASR(nn.Module):
     #     return logits
     
     def forward(self, input_tensor, decoder_input) -> torch.Tensor:
-        logger.info(f"In file model.py and function forward(): The input tensor at the beginning shape is {input_tensor.shape}")
-        # Apply soft prompting to the input tensor
-        enhanced_input = self.soft_prompting(input_tensor)
-        # Pass the enhanced input along with the decoder input to the Whisper model
-        logits = self.asr(enhanced_input, decoder_input)   
-        return logits
+            logger.info(f"In file model.py and function forward() The input tensor at the beginning shape is {input_tensor.shape}")
+            # Get the soft prompts
+            #soft_prompts = self.soft_prompting()
+            # Concatenate the soft prompts with the input tensor along the last dimension (feature dimension)
+            #enhanced_input = torch.cat([input_tensor, soft_prompts], dim=2)
+            # Log the shapes for debugging
+            logger.info(f"Enhanced input shape after concatenation: {input_tensor.shape}")
+            # Pass the enhanced input to the ASR model
+            logits = self.asr(input_tensor, decoder_input)   
+            return logits
     
     

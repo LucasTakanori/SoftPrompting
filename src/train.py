@@ -367,18 +367,18 @@ class Trainer():
             # HACK prediction goes torch.Size([16, 448, 51865] instead of 444 just take the tensor and crop it
             if(prediction.size(2)!=2):  prediction = prediction[:, :, :444]
             
-            self.loss = self.loss_function(prediction, transcription)
+            #self.loss = self.loss_function(prediction, transcription)
 
-            self.train_loss = self.loss.item()
+            #self.train_loss = self.loss.item()
 
             # Backpropagation
-            logger.info(type(self.optimizer))
+            #logger.info(type(self.optimizer))
             #self.optimizer.zero_grad()
             #self.loss.backward()
             #self.optimizer.step()
 
             # Evaluate and save the best model
-            self.eval_and_save_best_model()
+            #self.eval_and_save_best_model()
 
     def train(self, starting_epoch, max_epochs):
         logger.info(f'Starting training for {self.params.max_epochs} epochs.')
