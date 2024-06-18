@@ -27,22 +27,29 @@ class PromptASR(nn.Module):
     def __init__(self, parameters, device) -> None:
         super().__init__()
         self.device = device
-        self.parameters = parameters
+        self.params = parameters
         self.init_asr()
         self.init_soft_prompting()
     
     def init_asr(self):
-        if self.parameters.asr_model == 'whisper':
-            self.asr = Whisper(self.parameters, self.device)
+        if self.params.asr_model == 'whisper':
+            self.asr = Whisper(self.params, self.device)
         
     def init_soft_prompting(self):
-        self.soft_prompting = SoftPrompting(self.parameters)
+        self.soft_prompting = SoftPrompting(self.params)
 
-    def forward(self, input_tensor, decoder_input) -> torch.Tensor:
-        logger.info(f"In file model.py and function forward() The input tensor at the beginning shape is {input_tensor.shape}")
-        logits = self.asr(input_tensor, decoder_input, self.soft_prompting())   
+    # def forward(self, input_tensor, decoder_input) -> torch.Tensor:
+    #     logger.info(f"In file model.py and function forward() The input tensor at the beginning shape is {input_tensor.shape}")
+    #     logits = self.asr(input_tensor, decoder_input, self.soft_prompting())   
 
-        return logits
+    #     return logits
     
+    def forward(self, input_tensor, decoder_input) -> torch.Tensor:
+        logger.info(f"In file model.py and function forward(): The input tensor at the beginning shape is {input_tensor.shape}")
+        # Apply soft prompting to the input tensor
+        enhanced_input = self.soft_prompting(input_tensor)
+        # Pass the enhanced input along with the decoder input to the Whisper model
+        logits = self.asr(enhanced_input, decoder_input)   
+        return logits
     
     

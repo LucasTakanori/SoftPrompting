@@ -24,7 +24,7 @@ logger.addHandler(logger_stream_handler)
 
 class Whisper():
     def __init__(self, parameters, device):
-        self.parameters = parameters
+        self.params = parameters
         self.device = device
         self.init_whisper()
 
@@ -37,13 +37,13 @@ class Whisper():
             parameter.requires_grad = False
 
     def select_whisper(self):
-        self.asr = whisper.load_model(self.parameters.whisper_flavour, self.device)
-        self.tokenizer = get_tokenizer(self.parameters.whisper_flavour)
+        self.asr = whisper.load_model(self.params.whisper_flavour, self.device)
+        self.tokenizer = get_tokenizer(self.params.whisper_flavour)
 
-    def run_whisper(self, input_tensor, decoder_input, soft_prompts):
-        input_concat = torch.cat((input_tensor, soft_prompts), dim=2)
+    def run_whisper(self, input_tensor, decoder_input):
+        #input_concat = torch.cat((input_tensor, soft_prompts), dim=2)
         logger.info(            
-            f"In File asr.py and function run_whisper():\n  Input_tensor shape: {input_tensor.shape}\n  soft_prompts shape: {soft_prompts.shape}\n  input_concat shape: {input_concat.shape}"
+            f"In File asr.py and function run_whisper():\n  Input_tensor shape: {input_tensor.shape}\n"#  soft_prompts shape: {soft_prompts.shape}\n  input_concat shape: {input_concat.shape}"
         )
         logger.info(
             f"In File asr.py and function run_whisper() decoder_input: {decoder_input.shape}"
@@ -52,5 +52,5 @@ class Whisper():
 
         return logits
     
-    def __call__(self, input_tensor, decoder_input,  soft_prompts):
-        return self.run_whisper(input_tensor, decoder_input, soft_prompts)
+    def __call__(self, input_tensor, decoder_input):
+        return self.run_whisper(input_tensor, decoder_input)

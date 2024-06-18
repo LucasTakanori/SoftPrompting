@@ -23,4 +23,5 @@ TRAIN_DEFAULT_SETTINGS = {
     "nmels": 80,
     "context_len": 100,
     "loss": "CrossEntropy",
+    "optimizer": "adam"
 }

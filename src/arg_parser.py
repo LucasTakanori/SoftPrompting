@@ -174,6 +174,19 @@ class ArgsParser:
             help = 'The context len of the tokens. In the code it is represented also as the context len of the softprompts'
         )
 
+        self.parser.add_argument(
+            '--optimizer',
+            type = str,
+            default = TRAIN_DEFAULT_SETTINGS["optimizer"],
+            help = 'What optimizer is used to train the model'
+        )
+        self.parser.add_argument(
+            '--learning_rate',
+            type = float,
+            default = TRAIN_DEFAULT_SETTINGS["learning_rate"],
+            help = 'Learning rate of the optimizer'
+        )
+
 
     def main(self):
         self.add_parser_args()

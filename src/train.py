@@ -45,6 +45,7 @@ class Trainer():
         self.load_training_data()
         self.load_network()
         self.load_loss_function()
+        self.load_optimizer()
         self.initialize_training_variables()
 
     def set_params(self, input_params):
@@ -97,14 +98,25 @@ class Trainer():
     
 
     def load_optimizer(self):
-        logger.info("Loading the optimizer...")
+        logger.info(f"Loading the optimizer... {self.params.optimizer}") 
+        #logger.info(f"self.net.parameters() type: {type(self.net.parameters)}")
+        #logger.info(f"self.params type: {type(self.params)}")
+        logger.info(self.net.parameters())
+
+        #for param in filter(lambda p: p.requires_grad, self.net.parameters()):
+        #    print(param.size())
+
 
         if self.params.optimizer == 'adam':
+            # HACK Mirar be quins parametres ficar 
+
             self.optimizer = optim.Adam(
                 filter(lambda p: p.requires_grad, self.net.parameters()),
+                #self.net.parameters.parse_args(),
                 lr=self.params.learning_rate,
-                weight_decay=self.params.weight_decay
+                #weight_decay=self.params.weight_decay
             )
+
         if self.params.optimizer == 'rmsprop':
             self.optimizer = optim.RMSprop(
                 #self.net.parameters(), 
@@ -122,6 +134,7 @@ class Trainer():
             
         if self.params.load_checkpoint == True:
             self.load_checkpoint_optimizer()
+        logger.info(type(self.optimizer))
         logger.info(f"Optimizer {self.params.optimizer} loaded!")
 
     def load_checkpoint_params(self):
@@ -211,6 +224,7 @@ class Trainer():
         
         # HACK: naive model
         self.net = PromptASR(self.params, self.device)
+        logger.info(f"params in load_network {self.net.parameters}")
 
         if self.params.load_checkpoint == True:
             # TODO: load the model from the checkpoint if wanted
@@ -349,17 +363,19 @@ class Trainer():
             # Calculate the prediction and the loss:
             prediction = self.net(input, decoder_input)
             logger.info(f"In File train.py and function train_single_epoch() : input.size(): {input.size()}, transcription.size(): {transcription.size()}, prediction.size(): {prediction.size()}")
+            
+            # HACK prediction goes torch.Size([16, 448, 51865] instead of 444 just take the tensor and crop it
             if(prediction.size(2)!=2):  prediction = prediction[:, :, :444]
             
             self.loss = self.loss_function(prediction, transcription)
 
             self.train_loss = self.loss.item()
 
-            self.optimizer = self.load_optimizer()
             # Backpropagation
-            self.optimizer.zero_grad()
-            self.loss.backward()
-            self.optimizer.step()
+            logger.info(type(self.optimizer))
+            #self.optimizer.zero_grad()
+            #self.loss.backward()
+            #self.optimizer.step()
 
             # Evaluate and save the best model
             self.eval_and_save_best_model()
