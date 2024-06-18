@@ -101,6 +101,7 @@ class TrainDataset(Dataset):
         Pads the transcription tokens with zeros to match the maximum length.
         """
         pad_left = max(0, self.tokens_max_length - transcription_tokens.shape[-1])
+        #logger.info(f"In the file data.py and function pad_Transcription() padding added to transcription: {pad_left}")
         padded_transcription_tokens = torch.nn.functional.pad(transcription_tokens, (pad_left, 0), mode = "constant")
 
         return padded_transcription_tokens

@@ -347,11 +347,15 @@ class Trainer():
             if self.batch_number == 0: logger.info(f"input.size(): {input.size()}")
 
             # Calculate the prediction and the loss:
-            logger.info(f"input.size(): {input.size()}, transcription.size(): {transcription.size()}")
             prediction = self.net(input, decoder_input)
+            logger.info(f"In File train.py and function train_single_epoch() : input.size(): {input.size()}, transcription.size(): {transcription.size()}, prediction.size(): {prediction.size()}")
+            if(prediction.size(2)!=2):  prediction = prediction[:, :, :444]
+            
             self.loss = self.loss_function(prediction, transcription)
+
             self.train_loss = self.loss.item()
 
+            self.optimizer = self.load_optimizer()
             # Backpropagation
             self.optimizer.zero_grad()
             self.loss.backward()

@@ -42,9 +42,12 @@ class Whisper():
 
     def run_whisper(self, input_tensor, decoder_input, soft_prompts):
         input_concat = torch.cat((input_tensor, soft_prompts), dim=2)
-        logger.info(f"Input_tensor shape: {input_tensor.shape}")
-        logger.info(f"soft_prompts shape: {soft_prompts.shape}")
-        logger.info(f"input_concat shape: {input_concat.shape}")
+        logger.info(            
+            f"In File asr.py and function run_whisper():\n  Input_tensor shape: {input_tensor.shape}\n  soft_prompts shape: {soft_prompts.shape}\n  input_concat shape: {input_concat.shape}"
+        )
+        logger.info(
+            f"In File asr.py and function run_whisper() decoder_input: {decoder_input.shape}"
+        )
         logits = self.asr(input_tensor, decoder_input)
 
         return logits
