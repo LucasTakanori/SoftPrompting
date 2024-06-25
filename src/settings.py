@@ -15,7 +15,7 @@ TRAIN_DEFAULT_SETTINGS = {
     "padding_type": "zero_pad",
     "asr_model": "whisper",
     "learning_rate": 1e-4,
-    "tokens_max_length": 51865,
+    "tokens_max_length": 444,
     "prompt_depth": 32,
     "prompt_length": 100,
     "prompt_dim": 512,
@@ -23,4 +23,5 @@ TRAIN_DEFAULT_SETTINGS = {
     "nmels": 80,
     "context_len": 100,
     "loss": "CrossEntropy",
+    "optimizer": "adam"
 }

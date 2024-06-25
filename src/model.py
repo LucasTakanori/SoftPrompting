@@ -27,22 +27,33 @@ class PromptASR(nn.Module):
     def __init__(self, parameters, device) -> None:
         super().__init__()
         self.device = device
-        self.parameters = parameters
+        self.params = parameters
         self.init_asr()
         self.init_soft_prompting()
     
     def init_asr(self):
-        if self.parameters.asr_model == 'whisper':
-            self.asr = Whisper(self.parameters, self.device)
+        if self.params.asr_model == 'whisper':
+            self.asr = Whisper(self.params, self.device)
         
     def init_soft_prompting(self):
-        self.soft_prompting = SoftPrompting(self.parameters)
+        self.soft_prompting = SoftPrompting(self.params)
 
-    def forward(self, input_tensor, decoder_input) -> torch.Tensor:
-        logger.info(f"The input tensor at the beginning shape is {input_tensor.shape}")
-        logits = self.asr(input_tensor, decoder_input, self.soft_prompting())   
+    # def forward(self, input_tensor, decoder_input) -> torch.Tensor:
+    #     logger.info(f"In file model.py and function forward() The input tensor at the beginning shape is {input_tensor.shape}")
+    #     logits = self.asr(input_tensor, decoder_input, self.soft_prompting())   
 
-        return logits
+    #     return logits
     
+    def forward(self, input_tensor, decoder_input) -> torch.Tensor:
+            logger.info(f"In file model.py and function forward() The input tensor at the beginning shape is {input_tensor.shape}")
+            # Get the soft prompts
+            #soft_prompts = self.soft_prompting()
+            # Concatenate the soft prompts with the input tensor along the last dimension (feature dimension)
+            #enhanced_input = torch.cat([input_tensor, soft_prompts], dim=2)
+            # Log the shapes for debugging
+            logger.info(f"Enhanced input shape after concatenation: {input_tensor.shape}")
+            # Pass the enhanced input to the ASR model
+            logits = self.asr(input_tensor, decoder_input)   
+            return logits
     
     
