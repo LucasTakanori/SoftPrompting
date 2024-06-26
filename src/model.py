@@ -53,7 +53,7 @@ class PromptASR(nn.Module):
             # Log the shapes for debugging
             logger.info(f"Enhanced input shape after concatenation: {input_tensor.shape}")
             # Pass the enhanced input to the ASR model
-            logits = self.asr(input_tensor, decoder_input)   
+            logits = self.asr(input_tensor, decoder_input,self.soft_prompting.get_tensor())   
             return logits
     
     

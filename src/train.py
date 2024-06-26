@@ -355,7 +355,6 @@ class Trainer():
 
         for self.batch_number, batch_data in enumerate(self.training_generator):
             input, transcription, decoder_input = batch_data
-
             input, transcription, decoder_input = input.to(self.device), transcription.to(self.device), decoder_input.to(self.device)
                       
             if self.batch_number == 0: logger.info(f"input.size(): {input.size()}")

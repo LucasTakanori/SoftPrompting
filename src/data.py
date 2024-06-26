@@ -125,7 +125,7 @@ class TrainDataset(Dataset):
         and zero padding which adds zeros to the left of the waveform until it reaches the desired length.
         """
         if padding_type == "zero_pad":
-            pad_left = max(0, self.random_crop_samples - waveform.shape[-1])
+            pad_left = max(0, self.random_crop_samples - waveform.shape[-1]) #HACK
             padded_waveform = torch.nn.functional.pad(waveform, (pad_left, 0), mode = "constant")
         elif padding_type == "repetition_pad":
             necessary_repetitions = int(np.ceil(random_crop_samples / waveform.size(-1)))
@@ -201,8 +201,7 @@ class TrainDataset(Dataset):
         place_holder = torch.zeros((mel.size(0), n_frames))
         mel = torch.concat([place_holder, mel], dim=1)
         ###
-        mel = pad_or_trim(mel, N_FRAMES)
-        
+        mel = pad_or_trim(mel, N_FRAMES-100) #HACK HACK HACK HACK 
         return mel
     
     def process_utterance(self, waveform):
