@@ -83,12 +83,7 @@ class TrainDataset(Dataset):
     #region transcription
     def init_tokenizer(self):
         logger.info(f"Initializing tokenizer")
-
-        if self.whisper_flavour == "medium":
-            self.tokenizer = get_tokenizer(self.whisper_flavour)
-        else:
-            raise Exception("No tokenizer found for the specified flavour")
-
+        self.tokenizer = get_tokenizer(self.whisper_flavour)
 
     def get_transcription_tokens(self, transcription):
         indexed_tokens = self.tokenizer.encode(transcription)
