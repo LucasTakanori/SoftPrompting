@@ -9,7 +9,7 @@ TRAIN_DEFAULT_SETTINGS = {
     "evaluation_augmentation_prob": 0,
     "sample_rate": 16000,
     "whisper_flavour": "tiny",
-    "batch_size": 4,
+    "batch_size": 1,
     "num_workers": 2,
     "random_crop_secs": 30,
     "padding_type": "zero_pad",

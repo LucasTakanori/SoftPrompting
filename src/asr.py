@@ -38,6 +38,8 @@ class Whisper():
 
     def select_whisper(self):
         self.asr = whisper.load_model(self.params.whisper_flavour, self.device)
+        self.decoding_options = whisper.DecodingOptions(language="ca", without_timestamps=True)# HACK Use parameters but for now test with this
+        print(self.decoding_options)
         self.tokenizer = get_tokenizer(self.params.whisper_flavour)
 
     def run_whisper(self, input_tensor, decoder_input, soft_prompt):
@@ -50,9 +52,15 @@ class Whisper():
 
         input_concat = torch.cat((input_tensor, soft_prompt), dim=2)
         print(input_concat.shape)
-        logits = self.asr(input_concat, decoder_input)
-
-        return logits
+        
+        results = self.asr.decode(input_concat ,self.decoding_options)
+        tokens_list = [result.tokens for result in results]
+        #print(tokens_list)
+        #print(f"Decode output: {result}")
+        
+        return tokens_list
+        #logits = self.asr(input_concat, decoder_input)
+        #return logits
     
     def __call__(self, input_tensor, decoder_input, soft_prompt):
         return self.run_whisper(input_tensor, decoder_input,soft_prompt)
