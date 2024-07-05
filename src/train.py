@@ -361,10 +361,11 @@ class Trainer():
 
             # Calculate the prediction and the loss:
             prediction = self.net(input, decoder_input)
-            logger.info(f"In File train.py and function train_single_epoch() : input.size(): {input.size()}, transcription.size(): {transcription.size()}, prediction.size(): {prediction.size()}") # WATCH OUT IF BATCH NUMBER >1 ERROR
+            logger.info(f"Transcription type:{type(transcription)}")
+            logger.info(f"In File train.py and function train_single_epoch() : input.size(): {input.size()}, transcription.size(): {transcription.size()}, len(prediction): {len(prediction)}") # WATCH OUT IF BATCH NUMBER >1 ERROR
             # Print predictions (add this line)
-            #logger.info("Prediction: ", prediction)
-            logger.info("Transcription: ", transcription)
+            logger.info("Prediction: ", prediction)
+            #logger.info("Transcription: ", transcription)
             # HACK prediction goes torch.Size([16, 448, 51865] instead of 444 just take the tensor and crop it
             #if(prediction.size(2)!=2):  prediction = prediction[:, :, :444]
             

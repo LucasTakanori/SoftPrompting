@@ -54,11 +54,15 @@ class Whisper():
         print(input_concat.shape)
         
         results = self.asr.decode(input_concat ,self.decoding_options)
+        
+
         tokens_list = [result.tokens for result in results]
         #print(tokens_list)
         #print(f"Decode output: {result}")
+
+        tokens_tensor = torch.FloatTensor(tokens_list)
         
-        return tokens_list
+        return tokens_tensor
         #logits = self.asr(input_concat, decoder_input)
         #return logits
     
