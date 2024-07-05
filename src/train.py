@@ -361,25 +361,25 @@ class Trainer():
 
             # Calculate the prediction and the loss:
             prediction = self.net(input, decoder_input)
-            #logger.info(f"In File train.py and function train_single_epoch() : input.size(): {input.size()}, transcription.size(): {transcription.size()}, prediction.size(): {prediction.size()}") WATCH OUT IF BATCH NUMBER >1 ERROR
+            logger.info(f"In File train.py and function train_single_epoch() : input.size(): {input.size()}, transcription.size(): {transcription.size()}, prediction.size(): {prediction.size()}") # WATCH OUT IF BATCH NUMBER >1 ERROR
             # Print predictions (add this line)
             #logger.info("Prediction: ", prediction)
-            #logger.info("Transcription: ", transcription)
+            logger.info("Transcription: ", transcription)
             # HACK prediction goes torch.Size([16, 448, 51865] instead of 444 just take the tensor and crop it
             #if(prediction.size(2)!=2):  prediction = prediction[:, :, :444]
             
-            #self.loss = self.loss_function(prediction, transcription)
+            self.loss = self.loss_function(prediction, transcription)
 
-            #self.train_loss = self.loss.item()
+            self.train_loss = self.loss.item()
 
             # Backpropagation
-            #logger.info(type(self.optimizer))
-            #self.optimizer.zero_grad()
-            #self.loss.backward()
-            #self.optimizer.step()
+            logger.info(type(self.optimizer))
+            self.optimizer.zero_grad()
+            self.loss.backward()
+            self.optimizer.step()
 
             # Evaluate and save the best model
-            #self.eval_and_save_best_model()
+            self.eval_and_save_best_model()
 
     def train(self, starting_epoch, max_epochs):
         logger.info(f'Starting training for {self.params.max_epochs} epochs.')
