@@ -364,12 +364,16 @@ class Trainer():
 
             prediction = prediction.to(self.device)
 
-            logger.info(f"Transcription type:{type(transcription)}")
             logger.info(f"In File train.py and function train_single_epoch() : input.size(): {input.size()}, transcription.size(): {transcription.size()}, len(prediction): {len(prediction)}") # WATCH OUT IF BATCH NUMBER >1 ERROR
             # Print predictions (add this line)
             # HACK prediction goes torch.Size([16, 448, 51865] instead of 444 just take the tensor and crop it
             #if(prediction.size(2)!=2):  prediction = prediction[:, :, :444]
 
+            logger.info(f"Prediction: {prediction}")
+            logger.info(f"Transcription: {transcription}")
+
+            logger.info(f"Prediction size: {prediction.size()}")
+            logger.info(f"Transcription size: {transcription.size()}")
 
             self.loss = self.loss_function(prediction, transcription)
 

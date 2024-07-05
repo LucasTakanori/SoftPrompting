@@ -42,6 +42,17 @@ class Whisper():
         print(self.decoding_options)
         self.tokenizer = get_tokenizer(self.params.whisper_flavour)
 
+
+    def pad_transcription(self, transcription_tokens):
+        """
+        Pads the transcription tokens with zeros to match the maximum length.
+        """
+        pad_left = max(0, self.tokens_max_length - transcription_tokens.shape[-1])
+        #logger.info(f"In the file data.py and function pad_Transcription() padding added to transcription: {pad_left}")
+        padded_transcription_tokens = torch.nn.functional.pad(transcription_tokens, (pad_left, 0), mode = "constant")
+
+        return padded_transcription_tokens
+    
     def run_whisper(self, input_tensor, decoder_input, soft_prompt):
         # logger.info(            
         #     f"In File asr.py and function run_whisper():\n  Input_tensor shape: {input_tensor.shape}\n "
