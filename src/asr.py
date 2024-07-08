@@ -66,17 +66,23 @@ class Whisper():
         input_concat = torch.cat((input_tensor, soft_prompt), dim=2)
         print(input_concat.shape)
         
-        results = self.asr.decode(input_concat ,self.decoding_options)
-        
+        # whisper logits are [1, 448, 51865]
+        logits = self.asr.decoder(decoder_input, self.asr.encoder(input_concat))
 
-        tokens_list = [result.tokens for result in results]
-        #print(tokens_list)
-        #print(f"Decode output: {result}")
+        # let's remove this part of the code for now.
+        if False:
+            results = self.asr.decode(input_concat ,self.decoding_options)
+            
+            logger.info(f"The results are {results}")
 
-        tokens_tensor = torch.FloatTensor(tokens_list)
-        tokens_padded = self.pad_transcription(tokens_tensor)
+            tokens_list = [result.tokens for result in results]
+            # logger.info(f"the tokens list{tokens_list}")
+            #print(f"Decode output: {result}")
 
-        return tokens_padded
+            tokens_tensor = torch.FloatTensor(tokens_list)
+            tokens_padded = self.pad_transcription(tokens_tensor)
+
+        return logits
         #logits = self.asr(input_concat, decoder_input)
         #return logits
     
