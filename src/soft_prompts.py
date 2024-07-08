@@ -12,9 +12,10 @@ class SoftPrompting(nn.Module):
                                                               requires_grad=True)
         torch.nn.init.xavier_uniform_(self.soft_prompt_encoder)        
     
-    def forward(self):
+    def get_tensor(self):
 
-         return self.soft_prompt_encoder
+        return self.soft_prompt_encoder
+
 
     # def forward(self, input_tensor):
     #     # Expanding soft_prompt_encoder to match the batch size of the input_tensor

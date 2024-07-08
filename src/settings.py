@@ -8,8 +8,8 @@ TRAIN_DEFAULT_SETTINGS = {
     "training_augmentation_prob": 0,
     "evaluation_augmentation_prob": 0,
     "sample_rate": 16000,
-    "whisper_flavour": "medium",
-    "batch_size": 16,
+    "whisper_flavour": "tiny",
+    "batch_size": 1,
     "num_workers": 2,
     "random_crop_secs": 30,
     "padding_type": "zero_pad",
@@ -23,5 +23,6 @@ TRAIN_DEFAULT_SETTINGS = {
     "nmels": 80,
     "context_len": 100,
     "loss": "CrossEntropy",
-    "optimizer": "adam"
+    "optimizer": "adam",
+    "vocab_size":51865 ,
 }

@@ -190,6 +190,7 @@ class Trainer():
                                         random_crop_secs=self.params.random_crop_secs,
                                         tokens_max_length=self.params.tokens_max_length,
                                         speech_representation=self.params.speech_representation,
+                                        vocab_size=self.params.vocab_size,
                                         nmels=self.params.nmels,
                                         prompt_use_rate= 0.5, #HACK learn wtf is this
                                         max_prompt_length=223, #HACK I have other metric for this. Unify
@@ -354,33 +355,40 @@ class Trainer():
 
 
         for self.batch_number, batch_data in enumerate(self.training_generator):
-            input, transcription, decoder_input = batch_data
-
-            input, transcription, decoder_input = input.to(self.device), transcription.to(self.device), decoder_input.to(self.device)
+            input, transcription, decoder_input, ground_truth = batch_data
+            input, transcription, decoder_input, ground_truth = input.to(self.device), transcription.to(self.device), decoder_input.to(self.device), ground_truth.to(self.device)
                       
             if self.batch_number == 0: logger.info(f"input.size(): {input.size()}")
 
             # Calculate the prediction and the loss:
             prediction = self.net(input, decoder_input)
-            logger.info(f"In File train.py and function train_single_epoch() : input.size(): {input.size()}, transcription.size(): {transcription.size()}, prediction.size(): {prediction.size()}")
-            # Print predictions (add this line)
-            #logger.info("Prediction: ", prediction)
-            #logger.info("Transcription: ", transcription)
-            # HACK prediction goes torch.Size([16, 448, 51865] instead of 444 just take the tensor and crop it
-            if(prediction.size(2)!=2):  prediction = prediction[:, :, :444]
-            
-            #self.loss = self.loss_function(prediction, transcription)
 
-            #self.train_loss = self.loss.item()
+            prediction = prediction.to(self.device)
+
+            logger.info(f"In File train.py and function train_single_epoch() : input.size(): {input.size()}, transcription.size(): {transcription.size()}, len(prediction): {len(prediction)}") # WATCH OUT IF BATCH NUMBER >1 ERROR
+            # Print predictions (add this line)
+            # HACK prediction goes torch.Size([16, 448, 51865] instead of 444 just take the tensor and crop it
+            #if(prediction.size(2)!=2):  prediction = prediction[:, :, :444]
+
+            logger.info(f"Prediction type: {prediction.dtype}")
+            logger.info(f"Ground truth type: {ground_truth.dtype}")
+
+            logger.info(f"Prediction size: {prediction.size()}")
+            logger.info(f"Ground truth size: {ground_truth.size()}")
+
+
+            self.loss = self.loss_function(prediction, ground_truth)
+
+            self.train_loss = self.loss.item()
 
             # Backpropagation
-            #logger.info(type(self.optimizer))
-            #self.optimizer.zero_grad()
-            #self.loss.backward()
-            #self.optimizer.step()
+            logger.info(type(self.optimizer))
+            self.optimizer.zero_grad()
+            self.loss.backward()
+            self.optimizer.step()
 
             # Evaluate and save the best model
-            #self.eval_and_save_best_model()
+            self.eval_and_save_best_model()
 
     def train(self, starting_epoch, max_epochs):
         logger.info(f'Starting training for {self.params.max_epochs} epochs.')

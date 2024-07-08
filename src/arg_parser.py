@@ -186,6 +186,12 @@ class ArgsParser:
             default = TRAIN_DEFAULT_SETTINGS["learning_rate"],
             help = 'Learning rate of the optimizer'
         )
+        self.parser.add_argument(
+            '--vocab_size',
+            type = int,
+            default = TRAIN_DEFAULT_SETTINGS["vocab_size"],
+            help = "The vocabulary size of the ASR text decoder."
+        )
 
 
     def main(self):
