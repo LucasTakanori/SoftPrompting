@@ -11,6 +11,8 @@ import numpy as np
 from whisper.tokenizer import get_tokenizer
 from typing import List, Optional, Tuple, AnyStr
 import re
+from torch.nn.utils.rnn import pad_sequence
+
 
 
 #region Logging
@@ -45,13 +47,14 @@ class TrainDataset(Dataset):
 
     Focus on the __getitem__ method to understand the process and the needs of the problem.
     """
-    def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, context_len, tokens_max_length, speech_representation, prompt_use_rate, max_prompt_length, nmels=80, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
+    def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, context_len, tokens_max_length, speech_representation, prompt_use_rate, max_prompt_length, vocab_size, nmels=80, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
         
         self.utterances_paths = utterances_paths
         # I suspect when instantiating two datasets the parameters are overrided
         self.augmentation_prob = augmentation_prob #TODO: implement data augmentation
         self.random_crop_secs = random_crop_secs
         self.speech_representation = speech_representation
+        self.vocab_size = vocab_size
         self.nmels = nmels
         self.language = "ca" # HACK whisper hardcoded
         self.context_len = context_len
@@ -300,6 +303,28 @@ class TrainDataset(Dataset):
     
     #endregion
     
+    #region ground_truth
+    def _construct_ground_truth(
+        self, prompt_tokens: List[int], special_tokens: List[int], text_tokens: List[int]
+    ) -> List[int]:
+        if len(prompt_tokens) == 0:
+            ground_truth = special_tokens[1:] + text_tokens + [self.tokenizer.eot]
+        else:
+            ground_truth = (
+                # Mask out the training loss for predicting the prompt tokens. We use "-100" as the
+                # default value for the `ignore_index` parameter in
+                # `torch.nn.functional.cross_entropy()`. However, we do not mask out the loss for
+                # predicting the sot token because our experiment indicates that the original
+                # Whisper model assigns a high probability to the sot token after prompt tokens.
+                [-100] * (len(prompt_tokens) - 1)
+                + special_tokens
+                + text_tokens
+                + [self.tokenizer.eot]
+            )
+        ground_truth = torch.tensor(ground_truth, dtype=torch.long)
+        return ground_truth
+    #endregion
+
 
     def __getitem__(self, index)-> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         
@@ -326,11 +351,19 @@ class TrainDataset(Dataset):
         # logger.info(f"shape of prompt_tokens: {len(prompt_tokens)}, special_tokens: {len(special_tokens)}, text_tokens: {len(text_tokens)}")
         #TODO: prompt tokens are not being used.
         # decoder_input =  special_tokens + transcription_tokens.tolist() 
-        special_tokens = torch.tensor(special_tokens, dtype=torch.long)
-        decoder_input = torch.cat((special_tokens, transcription_tokens), dim=0)
+
 
         # change to speech representation (ie mel-spectrogram)
         utterance = self.process_utterance(waveform)
 
-        return utterance, transcription_tokens, decoder_input
+        # HACK: we are not using decoder prompt tokens
+        prompt_tokens = ''
+        ground_truth = self._construct_ground_truth(prompt_tokens, special_tokens, transcription_tokens.tolist()) #HACK optimize this. we already had the list.
+        ground_truth = torch.nn.functional.one_hot(ground_truth, self.vocab_size)
+        ground_truth = torch.Tensor.float(ground_truth)
+
+        special_tokens = torch.tensor(special_tokens, dtype=torch.long)
+        decoder_input = torch.cat((special_tokens, transcription_tokens), dim=0)
+
+        return utterance, transcription_tokens, decoder_input, ground_truth
 
