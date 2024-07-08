@@ -190,6 +190,7 @@ class Trainer():
                                         random_crop_secs=self.params.random_crop_secs,
                                         tokens_max_length=self.params.tokens_max_length,
                                         speech_representation=self.params.speech_representation,
+                                        vocab_size=self.params.vocab_size,
                                         nmels=self.params.nmels,
                                         prompt_use_rate= 0.5, #HACK learn wtf is this
                                         max_prompt_length=223, #HACK I have other metric for this. Unify
@@ -354,8 +355,8 @@ class Trainer():
 
 
         for self.batch_number, batch_data in enumerate(self.training_generator):
-            input, transcription, decoder_input = batch_data
-            input, transcription, decoder_input = input.to(self.device), transcription.to(self.device), decoder_input.to(self.device)
+            input, transcription, decoder_input, ground_truth = batch_data
+            input, transcription, decoder_input, ground_truth = input.to(self.device), transcription.to(self.device), decoder_input.to(self.device), ground_truth.to(self.device)
                       
             if self.batch_number == 0: logger.info(f"input.size(): {input.size()}")
 
@@ -370,12 +371,13 @@ class Trainer():
             #if(prediction.size(2)!=2):  prediction = prediction[:, :, :444]
 
             logger.info(f"Prediction: {prediction}")
-            logger.info(f"Transcription: {transcription}")
+            logger.info(f"Ground truth: {ground_truth}")
 
             logger.info(f"Prediction size: {prediction.size()}")
-            logger.info(f"Transcription size: {transcription.size()}")
+            logger.info(f"Ground truth size: {ground_truth.size()}")
 
-            self.loss = self.loss_function(prediction, transcription)
+
+            self.loss = self.loss_function(prediction, ground_truth)
 
             self.train_loss = self.loss.item()
 
