@@ -11,6 +11,8 @@ import numpy as np
 from whisper.tokenizer import get_tokenizer
 from typing import List, Optional, Tuple, AnyStr
 import re
+from torch.nn.utils.rnn import pad_sequence
+
 
 
 #region Logging
@@ -356,8 +358,9 @@ class TrainDataset(Dataset):
 
         # HACK: we are not using decoder prompt tokens
         prompt_tokens = ''
-        ground_truth = self._construct_ground_truth(prompt_tokens, special_tokens, text_tokens)
+        ground_truth = self._construct_ground_truth(prompt_tokens, special_tokens, transcription_tokens.tolist()) #HACK optimize this. we already had the list.
         ground_truth = torch.nn.functional.one_hot(ground_truth, self.vocab_size)
+        ground_truth = torch.Tensor.float(ground_truth)
 
         special_tokens = torch.tensor(special_tokens, dtype=torch.long)
         decoder_input = torch.cat((special_tokens, transcription_tokens), dim=0)

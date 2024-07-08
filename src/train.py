@@ -370,8 +370,8 @@ class Trainer():
             # HACK prediction goes torch.Size([16, 448, 51865] instead of 444 just take the tensor and crop it
             #if(prediction.size(2)!=2):  prediction = prediction[:, :, :444]
 
-            logger.info(f"Prediction: {prediction}")
-            logger.info(f"Ground truth: {ground_truth}")
+            logger.info(f"Prediction type: {prediction.dtype}")
+            logger.info(f"Ground truth type: {ground_truth.dtype}")
 
             logger.info(f"Prediction size: {prediction.size()}")
             logger.info(f"Ground truth size: {ground_truth.size()}")
