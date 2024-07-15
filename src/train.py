@@ -3,6 +3,7 @@ import logging
 import datetime
 import torch
 import random
+import jiwer
 import numpy as np
 from torch import optim
 import os
@@ -134,13 +135,19 @@ class Trainer():
             
         if self.params.load_checkpoint == True:
             self.load_checkpoint_optimizer()
-        logger.info(type(self.optimizer))
+        #logger.info(type(self.optimizer))
         logger.info(f"Optimizer {self.params.optimizer} loaded!")
 
     def load_checkpoint_params(self):
         logger.info("Loading checkpoint parameters...")
         self.params = self.checkpoint["settings"]
         logger.info("Checkpoint parameters loaded!")
+
+    def load_validation_metrics(self):
+        logger.info(f"Validation metric is {self.params.validation_metrics}")
+
+
+
  
     def load_loss_function(self):
         logger.info("Loading the loss function...")
@@ -376,13 +383,12 @@ class Trainer():
             logger.info(f"Prediction size: {prediction.size()}")
             logger.info(f"Ground truth size: {ground_truth.size()}")
 
-
             self.loss = self.loss_function(prediction, ground_truth)
 
             self.train_loss = self.loss.item()
 
             # Backpropagation
-            logger.info(type(self.optimizer))
+            #logger.info(type(self.optimizer))
             self.optimizer.zero_grad()
             self.loss.backward()
             self.optimizer.step()
@@ -404,11 +410,15 @@ class Trainer():
 
         logger.info('Training finished!')
 
+    
+
     def main(self):
         logger.info("Training with the following parameters:")
         self.train(self.starting_epoch, self.params.max_epochs)
         if self.params.use_weights_and_biases: self.save_model_artifact()
-        if self.params.use_weights_and_biases: self.delete_version_artifacts()               
+        if self.params.use_weights_and_biases: self.delete_version_artifacts()  
+
+                 
 
 
 

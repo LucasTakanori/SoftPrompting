@@ -64,7 +64,7 @@ class Whisper():
         # )
 
         input_concat = torch.cat((input_tensor, soft_prompt), dim=2)
-        print(input_concat.shape)
+        #print(input_concat.shape)
         
         # whisper logits are [1, 448, 51865]
         logits = self.asr.decoder(decoder_input, self.asr.encoder(input_concat))

@@ -25,4 +25,5 @@ TRAIN_DEFAULT_SETTINGS = {
     "loss": "CrossEntropy",
     "optimizer": "adam",
     "vocab_size":51865 ,
+    "validation_metric":"wer",
 }

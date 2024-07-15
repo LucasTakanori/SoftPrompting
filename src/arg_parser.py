@@ -192,6 +192,13 @@ class ArgsParser:
             default = TRAIN_DEFAULT_SETTINGS["vocab_size"],
             help = "The vocabulary size of the ASR text decoder."
         )
+        self.parser.add_argument(
+            '--validation_metrics',
+            type = str,
+            nargs = '+',
+            default = TRAIN_DEFAULT_SETTINGS["wer"],
+            help = "Validation metric "
+        )
 
 
     def main(self):
