@@ -20,6 +20,26 @@ class ArgsParser:
             default=TRAIN_DEFAULT_SETTINGS["utterances_path"],
             help="Path to the dataset",
         )
+        self.parser.add_argument(
+            "--validation_utterances_path",
+            type=str,
+            default=TRAIN_DEFAULT_SETTINGS["validation_utterances_path"],
+            help="Path to the validation dataset",
+        )
+        
+        self.parser.add_argument(
+            '--checkpoint_file_folder',
+            type=str,
+            default=TRAIN_DEFAULT_SETTINGS["checkpoint_file_folder"],
+            help='Folder to save/load model checkpoints'
+        )
+
+        self.parser.add_argument(
+            '--checkpoint_file_name',
+            type=str,
+            default=TRAIN_DEFAULT_SETTINGS["checkpoint_file_name"],
+            help='Name of the checkpoint file'
+        )
 
         self.parser.add_argument(
             "--num_workers",
@@ -41,7 +61,12 @@ class ArgsParser:
             default=TRAIN_DEFAULT_SETTINGS["batch_size"],
             help="Batch size for training",
         )
-
+        self.parser.add_argument(
+            "--eval_batch_size",
+            type=int,
+            default=TRAIN_DEFAULT_SETTINGS["eval_batch_size"],
+            help="Evaluation batch size for training",
+        )
         self.parser.add_argument(
             "--random_crop_secs",
             type=float,

@@ -86,8 +86,7 @@ class TrainDataset(Dataset):
             reader = csv.DictReader(file, delimiter='\t')
             for row in reader:
                 self.utterances.append(row)
-        print(self.utterances)
-
+        
     def __len__(self):
         return len(self.utterances)
 

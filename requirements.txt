@@ -11,3 +11,5 @@ torchaudio
 wandb
 jiwer
 csv
+re
+typing
