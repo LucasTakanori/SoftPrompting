@@ -9,3 +9,7 @@ scikit-learn
 openai-whisper
 torchaudio
 wandb
+jiwer
+csv
+re
+typing

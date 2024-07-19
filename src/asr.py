@@ -1,6 +1,7 @@
 import logging
 import torch
 import whisper
+from torch import nn 
 from whisper.tokenizer import get_tokenizer
 
 # Set logging config
@@ -64,11 +65,11 @@ class Whisper():
         # )
 
         input_concat = torch.cat((input_tensor, soft_prompt), dim=2)
-        print(input_concat.shape)
+        #print(input_concat.shape)
         
         # whisper logits are [1, 448, 51865]
         logits = self.asr.decoder(decoder_input, self.asr.encoder(input_concat))
-
+        #print(logits.shape)
         # let's remove this part of the code for now.
         if False:
             results = self.asr.decode(input_concat ,self.decoding_options)
@@ -81,6 +82,7 @@ class Whisper():
 
             tokens_tensor = torch.FloatTensor(tokens_list)
             tokens_padded = self.pad_transcription(tokens_tensor)
+                # Convert logits to probabilities
 
         return logits
         #logits = self.asr(input_concat, decoder_input)

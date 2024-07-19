@@ -1,3 +1,4 @@
+import csv
 from torch.utils.data import Dataset
 import logging 
 import copy
@@ -70,7 +71,7 @@ class TrainDataset(Dataset):
         self.tokens_max_length = tokens_max_length
         self.waveforms_mean = waveforms_mean
         self.waveforms_std = waveforms_std
-        self.read_json()
+        self.read_tsv()
         if self.augmentation_prob > 0: self.init_data_augmentator()
 
     def read_json(self):
@@ -79,7 +80,13 @@ class TrainDataset(Dataset):
             for line in f:
                 self.utterances.append(json.loads(line)) 
         
-
+    def read_tsv(self):
+        self.utterances = []
+        with open(self.utterances_paths, 'r', encoding='utf-8') as file:
+            reader = csv.DictReader(file, delimiter='\t')
+            for row in reader:
+                self.utterances.append(row)
+        
     def __len__(self):
         return len(self.utterances)
 
