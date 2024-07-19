@@ -1,5 +1,5 @@
 TRAIN_DEFAULT_SETTINGS = {
-    "utterances_path": "/home/usuaris/veussd/lucas.takanori/lt400/lt400.json",
+    "utterances_path": "/home/usuaris/veussd/lucas.takanori/lt400/train.tsv",
     "random_seed": 1234,
     "max_epochs": 1,
     "use_weights_and_biases": False,
@@ -25,5 +25,4 @@ TRAIN_DEFAULT_SETTINGS = {
     "loss": "CrossEntropy",
     "optimizer": "adam",
     "vocab_size":51865 ,
-    "validation_metric":"wer",
 }

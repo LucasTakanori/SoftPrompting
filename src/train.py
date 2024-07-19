@@ -83,6 +83,14 @@ class Trainer():
         
         logger.info("Device setted.")
     
+    # Function to calculate WER
+    def calculate_wer(self, references, hypotheses):
+        return jiwer.wer(references, hypotheses)
+
+    # Function to calculate CER
+    def calculate_cer(self, references, hypotheses):
+        return jiwer.cer(references, hypotheses)
+
     def load_checkpoint(self):
         """Load trained model checkpoints to continue its training."""
         # Load checkpoint
@@ -142,10 +150,6 @@ class Trainer():
         logger.info("Loading checkpoint parameters...")
         self.params = self.checkpoint["settings"]
         logger.info("Checkpoint parameters loaded!")
-
-    def load_validation_metrics(self):
-        logger.info(f"Validation metric is {self.params.validation_metrics}")
-
 
 
  
