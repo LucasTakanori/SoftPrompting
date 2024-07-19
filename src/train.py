@@ -266,7 +266,7 @@ class Trainer():
 
 
         eval_data_loader_parameters = {
-            "batch_size": self.params.eval_batch_size,
+            "batch_size": self.params.batch_size,
             "shuffle": False,
             "num_workers": self.params.num_workers,
         }
@@ -446,7 +446,7 @@ class Trainer():
             all_predictions = []
             all_ground_truths = []
 
-            for self.batch_number, batch_data in self.training_generator:
+            for batch_data in self.training_generator:
                 input, transcription, decoder_input, ground_truth = batch_data
                 input = input.to(self.device)
                 decoder_input = decoder_input.to(self.device)
@@ -481,11 +481,12 @@ class Trainer():
 
             all_predictions = []
             all_ground_truths = []
-            print("1")
-            for self.batch_number, batch_data in self.eval_generator:
+
+            for batch_data in self.eval_generator:
                 input, transcription, decoder_input, ground_truth = batch_data
                 input = input.to(self.device)
                 decoder_input = decoder_input.to(self.device)
+                ground_truth = ground_truth.to(self.device)
 
                 prediction = self.net(input, decoder_input)
 

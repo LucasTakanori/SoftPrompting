@@ -61,12 +61,7 @@ class ArgsParser:
             default=TRAIN_DEFAULT_SETTINGS["batch_size"],
             help="Batch size for training",
         )
-        self.parser.add_argument(
-            "--eval_batch_size",
-            type=int,
-            default=TRAIN_DEFAULT_SETTINGS["eval_batch_size"],
-            help="Evaluation batch size for training",
-        )
+
         self.parser.add_argument(
             "--random_crop_secs",
             type=float,
