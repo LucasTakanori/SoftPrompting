@@ -88,15 +88,54 @@ class Trainer():
         logger.info("Device setted.")
     
 
+
     def calculate_wer(self, predictions: List[str], ground_truths: List[str]) -> float:
-        # Combine all predictions and ground truths into single strings
-        combined_predictions = " ".join(predictions)
-        combined_ground_truths = " ".join(ground_truths)
+        """
+        Calculate the average Word Error Rate (WER) across all prediction-ground truth tuples,
+        applying preprocessing to each string.
 
-        # Calculate WER using jiwer
-        wer = jiwer.wer(combined_ground_truths, combined_predictions)
+        Parameters:
+        - predictions: A list of predicted strings.
+        - ground_truths: A list of ground truth strings corresponding to the predictions.
 
-        return wer
+        Returns:
+        - The average WER across all tuples.
+        """
+
+        # Define preprocessing transformations
+        transforms = jiwer.Compose(
+            [
+                jiwer.RemoveEmptyStrings(),
+                jiwer.ToLowerCase(),
+                jiwer.RemoveMultipleSpaces(),
+                jiwer.Strip(),
+                jiwer.RemovePunctuation(),
+                jiwer.ReduceToListOfListOfWords(),
+            ]
+        )
+
+        total_wer = 0.0
+        num_pairs = len(predictions)
+
+        # Ensure predictions and ground_truths are of equal length
+        assert len(predictions) == len(ground_truths), "Predictions and ground truths lists must be of equal length."
+
+        # Iterate over each prediction-ground truth pair
+        for prediction, ground_truth in zip(predictions, ground_truths):
+            # Calculate WER for the current pair after applying transformations
+            wer = jiwer.wer(
+                        ground_truth,
+                        prediction,
+                        truth_transform=transforms,
+                        hypothesis_transform=transforms,
+                    )
+            total_wer += wer
+
+        # Calculate average WER
+        average_wer = total_wer / num_pairs if num_pairs > 0 else 0.0
+
+        return average_wer
+
 
 
     # Function to calculate CER
@@ -409,9 +448,9 @@ class Trainer():
                 self.validations_without_improvement += 1
                 self.validations_without_improvement_or_opt_update += 1
 
-                if self.validations_without_improvement >= self.params.early_stopping_patience:
-                    logger.info("Early stopping triggered.")
-                    self.early_stopping_flag = True
+                #if self.validations_without_improvement >= self.params.early_stopping_patience:
+                #    logger.info("Early stopping triggered.")
+                #    self.early_stopping_flag = True
 
     def evaluate(self):
         self.evaluate_training()
@@ -457,15 +496,18 @@ class Trainer():
 
                 # Convert logits to words
                 text_predictions = self.logits_to_words(prediction)
+                #print("prediction")
+                #print(text_predictions)
                 text_ground_truths = self.logits_to_words(ground_truth)
-
+                #print("ground_truth")
+                #print(text_ground_truths)
                 all_predictions.extend(text_predictions)
                 all_ground_truths.extend(text_ground_truths)
+
 
             # Calculate WER for all samples at once
             metric_score = self.calculate_wer(all_predictions, all_ground_truths)
             self.training_eval_metric = metric_score
-
             logger.info(f"Training WER: {metric_score:.3f}")
 
         self.net.train()
@@ -495,7 +537,7 @@ class Trainer():
 
                 all_predictions.extend(text_predictions)
                 all_ground_truths.extend(text_ground_truths)
-            print("2")
+
             metric_score = self.calculate_wer(all_predictions, all_ground_truths)
             self.validation_eval_metric = metric_score
 

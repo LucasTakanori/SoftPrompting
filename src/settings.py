@@ -1,7 +1,7 @@
 TRAIN_DEFAULT_SETTINGS = {
     "utterances_path": "/home/usuaris/veussd/lucas.takanori/lt400/test.tsv",
     "random_seed": 1234,
-    "max_epochs": 2,
+    "max_epochs": 4,
     "use_weights_and_biases": False,
     "load_checkpoint" : False,
     "checkpoint_file_folder": "./checkpoints",
@@ -9,7 +9,7 @@ TRAIN_DEFAULT_SETTINGS = {
     "training_augmentation_prob": 0,
     "evaluation_augmentation_prob": 0,
     "sample_rate": 16000,
-    "whisper_flavour": "tiny",
+    "whisper_flavour": "small",
     "batch_size": 2,
     "num_workers": 2,
     "random_crop_secs": 30,
@@ -27,5 +27,5 @@ TRAIN_DEFAULT_SETTINGS = {
     "optimizer": "adam",
     "vocab_size":51865 ,
     "validation_utterances_path":"/home/usuaris/veussd/lucas.takanori/lt400/dev.tsv",
-    "eval_and_save_best_model_every": 2,
+    "eval_and_save_best_model_every": 5,
 }
