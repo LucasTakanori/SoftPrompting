@@ -90,12 +90,6 @@ class ArgsParser:
             help = 'Max number of epochs to train.',
             )
             
-        self.parser.add_argument(
-            '--use_weights_and_biases',
-            action = argparse.BooleanOptionalAction,
-            default = TRAIN_DEFAULT_SETTINGS['use_weights_and_biases'],
-            help = 'Set to True if you want to use Weights and Biases.',
-            )
         
         self.parser.add_argument(
             '--asr_model',
@@ -212,6 +206,33 @@ class ArgsParser:
             default = TRAIN_DEFAULT_SETTINGS["vocab_size"],
             help = "The vocabulary size of the ASR text decoder."
         )
+        self.parser.add_argument(
+            '--use_weights_and_biases',
+            action = argparse.BooleanOptionalAction,
+            default = TRAIN_DEFAULT_SETTINGS['use_weights_and_biases'],
+            help = 'Set to True if you want to use Weights and Biases.',
+            )
+
+        self.parser.add_argument(
+            '--wandb_project',
+            type = str,
+            default = TRAIN_DEFAULT_SETTINGS['wandb_project'],
+            help = 'The name of the Weights and Biases project.',
+            )
+
+        self.parser.add_argument(
+            '--wandb_entity',
+            type = str,
+            default = TRAIN_DEFAULT_SETTINGS['wandb_entity'],
+            help = 'The Weights and Biases username or team name.',
+            )
+
+        self.parser.add_argument(
+            '--wandb_run_name',
+            type = str,
+            default = TRAIN_DEFAULT_SETTINGS['wandb_run_name'],
+            help = 'The name of the Weights and Biases run.',
+            )
 
 
 

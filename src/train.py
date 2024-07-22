@@ -2,6 +2,7 @@ from arg_parser import ArgsParser
 import logging
 import datetime
 import torch
+import wandb
 import random
 from typing import List
 import re
@@ -52,6 +53,13 @@ class Trainer():
         self.load_optimizer()
         self.initialize_training_variables()
         self.tokenizer = get_tokenizer(self.params.whisper_flavour)
+        if self.params.use_weights_and_biases:
+            wandb.init(
+                project=self.params.wandb_project,
+                entity=self.params.wandb_entity,
+                name=self.params.wandb_run_name,
+                config=vars(self.params)
+            )
 
     def set_params(self, input_params):
         '''Set parameters for training.'''
@@ -509,6 +517,9 @@ class Trainer():
             metric_score = self.calculate_wer(all_predictions, all_ground_truths)
             self.training_eval_metric = metric_score
             logger.info(f"Training WER: {metric_score:.3f}")
+                    # Log to wandb
+            if self.params.use_weights_and_biases:
+                wandb.log({"train_wer": self.training_eval_metric})
 
         self.net.train()
 
@@ -542,6 +553,10 @@ class Trainer():
             self.validation_eval_metric = metric_score
 
             logger.info(f"Validation WER: {metric_score:.3f}")
+
+            # Log to wandb
+            if self.params.use_weights_and_biases:
+                wandb.log({"val_wer": self.validation_eval_metric})
 
         self.net.train()
 
@@ -585,6 +600,14 @@ class Trainer():
             logger.info(f"loss: {self.loss}")
 
             self.train_loss = self.loss.item()
+
+            # Log to wandb
+            if self.params.use_weights_and_biases:
+                wandb.log({
+                    "train_loss": self.train_loss,
+                    "epoch": self.epoch,
+                    "step": self.step
+                })
 
             # Backpropagation
             #logger.info(type(self.optimizer))
@@ -647,6 +670,12 @@ class Trainer():
         save_path = os.path.join(self.params.checkpoint_file_folder, f'best_model_epoch_{self.epoch}.pth')
         torch.save(checkpoint, save_path)
         
+                # Log model as artifact to wandb
+        if self.params.use_weights_and_biases:
+            artifact = wandb.Artifact(f"best_model_epoch_{self.epoch}", type="model")
+            artifact.add_file(save_path)
+            wandb.log_artifact(artifact)
+
         logger.info(f"Best model saved to {save_path}")
 
     def main(self):
