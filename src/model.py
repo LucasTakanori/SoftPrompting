@@ -1,57 +1,27 @@
-import logging
-from torch import nn 
 import torch
-from whisper.tokenizer import get_tokenizer
+from torch import nn
+from transformers import WhisperForConditionalGeneration, WhisperProcessor
 from soft_prompts import SoftPrompting
-from asr import Whisper
-
-# Set logging config
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logger_formatter = logging.Formatter(
-    fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt = '%y-%m-%d %H:%M:%S',
-    )
-
-# Set a logging stream handler
-logger_stream_handler = logging.StreamHandler()
-logger_stream_handler.setLevel(logging.INFO)
-logger_stream_handler.setFormatter(logger_formatter)
-
-# Add handlers
-logger.addHandler(logger_stream_handler)
-#endregion
 
 class PromptASR(nn.Module):
-    def __init__(self, parameters, device) -> None:
+    def __init__(self, parameters, device):
         super().__init__()
         self.device = device
         self.params = parameters
-        self.init_asr()
-        self.init_soft_prompting()
-    
-    def init_asr(self):
-        if self.params.asr_model == 'whisper':
-            self.asr = Whisper(self.params, self.device)
+        self.whisper = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny").to(device)
+        self.processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
+        self.soft_prompting = SoftPrompting(parameters.batch_size, 
+                                            self.whisper.config.num_mel_bins, 
+                                            parameters.prompt_length).to(device)
+        # Freeze the Whisper model
+        for param in self.whisper.parameters():
+            param.requires_grad = False
         
-    def init_soft_prompting(self):
-        self.soft_prompting = SoftPrompting(self.params)
+        # Only the soft prompt parameters should be trainable
+        self.trainable_params = list(self.soft_prompting.parameters())
 
-    # def forward(self, input_tensor, decoder_input) -> torch.Tensor:
-    #     logger.info(f"In file model.py and function forward() The input tensor at the beginning shape is {input_tensor.shape}")
-    #     logits = self.asr(input_tensor, decoder_input, self.soft_prompting())   
-
-    #     return logits
-    
-    def forward(self, input_tensor, decoder_input) -> torch.Tensor:
-            # Get the soft prompts
-            #soft_prompts = self.soft_prompting()
-            # Concatenate the soft prompts with the input tensor along the last dimension (feature dimension)
-            #enhanced_input = torch.cat([input_tensor, soft_prompts], dim=2)
-            # Log the shapes for debugging
-            # Pass the enhanced input to the ASR model
-            logits = self.asr(input_tensor, decoder_input,self.soft_prompting.get_tensor())   
-            return logits
-    
-    
+    def forward(self, input_features):
+        batch_size = input_features.shape[0]
+        soft_prompts = self.soft_prompting(batch_size)
+        prompted_features = torch.cat([soft_prompts, input_features], dim=1)
+        return self.whisper(input_features=prompted_features).logits

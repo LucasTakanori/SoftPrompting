@@ -4,6 +4,7 @@ import logging
 import copy
 import json
 import torchaudio
+import torch.nn.functional as F
 from whisper.audio import CHUNK_LENGTH, N_FRAMES, log_mel_spectrogram, pad_or_trim, load_audio
 import torch
 import random
@@ -38,41 +39,23 @@ logger.addHandler(logger_stream_handler)
 
 
 class TrainDataset(Dataset):
-
-    """
-    The main goal of this class is, given an index, to provide the audio utterance and transcription of the audio.
-
-    However, because of the encoder-decoder architectures, we need to provide the decoder input as well.
-
-    In the case of Whisper, the decoder input is the concatenation of the special tokens, the transcription tokens. 
-
-    Focus on the __getitem__ method to understand the process and the needs of the problem.
-    """
-    def __init__(self, utterances_paths, whisper_flavour, random_crop_secs, context_len, tokens_max_length, speech_representation, prompt_use_rate, max_prompt_length, vocab_size, nmels=80, padding_type ="zero_pad", augmentation_prob = 0, sample_rate = 16000, waveforms_mean = None, waveforms_std = None):
-        
+    def __init__(self, utterances_paths, processor, random_crop_secs, tokens_max_length, 
+                 speech_representation, prompt_use_rate, prompt_length, vocab_size, 
+                 nmels=80, padding_type="zero_pad", augmentation_prob=0, sample_rate=16000):
         self.utterances_paths = utterances_paths
-        # I suspect when instantiating two datasets the parameters are overrided
-        self.augmentation_prob = augmentation_prob #TODO: implement data augmentation
+        self.processor = processor
         self.random_crop_secs = random_crop_secs
+        self.tokens_max_length = tokens_max_length
         self.speech_representation = speech_representation
+        self.prompt_use_rate = prompt_use_rate
+        self.prompt_length = prompt_length
         self.vocab_size = vocab_size
         self.nmels = nmels
-        self.language = "ca" # HACK whisper hardcoded
-        self.context_len = context_len
-        self.max_prompt_length = max_prompt_length
-        self.num_frames_per_second = N_FRAMES / CHUNK_LENGTH # HACK whisper hardcoded
-        self.whisper_flavour = whisper_flavour
-        self.init_tokenizer()
-        self.timestamp_pattern = re.compile(r"(<\|[123]?[0-9]\.[0-9][0-9]\|>)")
         self.padding_type = padding_type
-        self.prompt_use_rate = prompt_use_rate
+        self.augmentation_prob = augmentation_prob
         self.sample_rate = sample_rate
         self.random_crop_samples = int(self.random_crop_secs * self.sample_rate)
-        self.tokens_max_length = tokens_max_length
-        self.waveforms_mean = waveforms_mean
-        self.waveforms_std = waveforms_std
         self.read_tsv()
-        if self.augmentation_prob > 0: self.init_data_augmentator()
 
     def read_json(self):
         self.utterances = []
@@ -119,13 +102,9 @@ class TrainDataset(Dataset):
 
 
     def normalize(self, waveform):
-
-        if self.waveforms_mean is not None and self.waveforms_std is not None:
-            normalized_waveform = (waveform - self.waveforms_mean) / (self.waveforms_std + 0.000001)
-        else:
-            normalized_waveform = waveform
-
-        return normalized_waveform    
+        # Normalize the waveform to have zero mean and unit variance
+        waveform = (waveform - waveform.mean()) / (waveform.std() + 1e-8)
+        return waveform
 
     def pad_waveform(self, waveform, padding_type, random_crop_samples):
         """
@@ -167,9 +146,6 @@ class TrainDataset(Dataset):
                 new_freq = self.sample_rate, 
                 )     
             
-        # Normalize
-        if self.waveforms_mean is not None:
-            waveform = (waveform - self.waveforms_mean) / self.waveforms_std
 
         # Apply data augmentation if it falls within the probability
         if random.uniform(0, 0.999) > 1 - self.augmentation_prob:
@@ -285,7 +261,7 @@ class TrainDataset(Dataset):
     
     def _get_prompt_tokens(self, prompt: str) -> List[int]:
         if len(prompt) > 0 and torch.rand(1) < self.prompt_use_rate:
-            prompt_tokens = self._encode_text_with_timestamps(prompt)[-self.max_prompt_length :]
+            prompt_tokens = self._encode_text_with_timestamps(prompt)[-self.prompt_length :]
             prompt_tokens = [self.tokenizer.sot_prev] + prompt_tokens
         else:
             prompt_tokens = []
@@ -333,44 +309,32 @@ class TrainDataset(Dataset):
     #endregion
 
 
-    def __getitem__(self, index)-> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        
-        # We get the waveform and the transcription:
+    def __getitem__(self, index):
         utterance_path = self.utterances[index]["audio_path"]
         transcription = self.utterances[index]["text"]
 
-        # waveform modifications
-        waveform, initial_sample_rate = torchaudio.load(utterance_path)       
-        waveform = self.process_waveform(waveform, initial_sample_rate)
+        # Load and preprocess audio
+        audio_input, sr = torchaudio.load(utterance_path)
+        audio_input = self.process_waveform(audio_input, sr)
+        
+        # Process audio input
+        input_features = self.processor(audio_input, sampling_rate=self.sample_rate, return_tensors="pt").input_features
+        input_features = input_features.squeeze(0)  # Remove batch dimension
+        
+        # Pad or trim input features to account for soft prompts
+        target_length = self.prompt_length + N_FRAMES  # N_FRAMES should be defined based on Whisper's requirements
+        if input_features.shape[1] < target_length:
+            input_features = F.pad(input_features, (0, target_length - input_features.shape[1]))
+        else:
+            input_features = input_features[:, :target_length]
 
-        # tokenizing transcription:
-        transcription_tokens = self.get_transcription_tokens(transcription)
-        transcription_tokens = self.pad_transcription(transcription_tokens)
+        # Tokenize text
+        labels = self.processor.tokenizer(transcription, return_tensors="pt").input_ids.squeeze(0)
+        
+        # Pad or trim labels to the specified max token length
+        if labels.shape[0] < self.tokens_max_length:
+            labels = F.pad(labels, (0, self.tokens_max_length - labels.shape[0]), value=self.processor.tokenizer.pad_token_id)
+        else:
+            labels = labels[:self.tokens_max_length]
 
-        # decoder input
-        # HACK will change later. For now, we are not using timestamps
-        no_timestamps = True
-        prompt_tokens = self._get_prompt_tokens('@' * (self.context_len))  # hole the place where will be filled with speaker embedding.
-        text_tokens, next_partial_segment_start = self._get_text_tokens(transcription.lower(), no_timestamps)
-        is_text_empty = len(text_tokens) == 0        
-        special_tokens = self._get_special_tokens(is_text_empty, self.language, no_timestamps)
-        # list with all the input of the decoder
-        # logger.info(f"shape of prompt_tokens: {len(prompt_tokens)}, special_tokens: {len(special_tokens)}, text_tokens: {len(text_tokens)}")
-        #TODO: prompt tokens are not being used.
-        # decoder_input =  special_tokens + transcription_tokens.tolist() 
-
-
-        # change to speech representation (ie mel-spectrogram)
-        utterance = self.process_utterance(waveform)
-
-        # HACK: we are not using decoder prompt tokens
-        prompt_tokens = ''
-        ground_truth = self._construct_ground_truth(prompt_tokens, special_tokens, transcription_tokens.tolist()) #HACK optimize this. we already had the list.
-        ground_truth = torch.nn.functional.one_hot(ground_truth, self.vocab_size)
-        ground_truth = torch.Tensor.float(ground_truth)
-
-        special_tokens = torch.tensor(special_tokens, dtype=torch.long)
-        decoder_input = torch.cat((special_tokens, transcription_tokens), dim=0)
-
-        return utterance, transcription_tokens, decoder_input, ground_truth
-
+        return input_features, labels    

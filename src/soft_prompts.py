@@ -1,20 +1,13 @@
-from torch import nn
 import torch
+from torch import nn
 
 class SoftPrompting(nn.Module):
-    def __init__(self, parameters) -> None:
+    def __init__(self, batch_size, num_mel_bins, prompt_length):
         super().__init__()
-        #self.parameters = parameters
-        # The nmels parameter is 80 in the case of Whisper. 
-        self.soft_prompt_encoder = nn.Parameter(torch.Tensor(parameters.batch_size,
-                                                              parameters.nmels,
-                                                              parameters.prompt_length),
-                                                              requires_grad=True)
-        torch.nn.init.xavier_uniform_(self.soft_prompt_encoder)        
+        self.soft_prompt = nn.Parameter(torch.randn(batch_size, num_mel_bins, prompt_length))
     
-    def get_tensor(self):
-
-        return self.soft_prompt_encoder
+    def forward(self, input_features):
+        return torch.cat([self.soft_prompt, input_features], dim=-1)
 
 
     # def forward(self, input_tensor):
