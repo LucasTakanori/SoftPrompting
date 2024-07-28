@@ -182,23 +182,19 @@ class Trainer():
                 self.net.trainable_params,
                 lr=self.params.learning_rate,
             )
-        # ... (similar changes for other optimizer options)
-
         if self.params.optimizer == 'rmsprop':
             self.optimizer = optim.RMSprop(
-                #self.net.parameters(), 
-                filter(lambda p: p.requires_grad, self.net.parameters()), 
+                self.net.trainable_params,  # Changed from filter(lambda p: p.requires_grad, self.net.parameters())
                 lr=self.params.learning_rate, 
                 weight_decay=self.params.weight_decay,
-                )
+            )
         if self.params.optimizer == 'adamw':
             self.optimizer = optim.AdamW(
-                #self.net.parameters(), 
-                filter(lambda p: p.requires_grad, self.net.parameters()), 
+                self.net.trainable_params,  # Changed from filter(lambda p: p.requires_grad, self.net.parameters())
                 lr=self.params.learning_rate, 
                 weight_decay=self.params.weight_decay,
-                )       
-            
+            )
+                    
         if self.params.load_checkpoint == True:
             self.load_checkpoint_optimizer()
         #logger.info(type(self.optimizer))
@@ -408,20 +404,22 @@ class Trainer():
         logger.info("Evaluating training task...")
 
         with torch.no_grad():
-            self.model.eval()
+            self.net.eval()  # Change self.model to self.net
 
             all_predictions = []
             all_ground_truths = []
 
             for batch_data in self.training_generator:
-                input, transcription, _, _ = batch_data
-                input = input.to(self.device)
+                input_features, labels = batch_data
+                input_features = input_features.to(self.device)
+                labels = labels.to(self.device)
 
-                outputs = self.model.generate(input)
+                outputs = self.net(input_features)  # Change self.model to self.net
                 
                 # Convert logits to words
-                text_predictions = self.processor.batch_decode(outputs, skip_special_tokens=True)
-                text_ground_truths = self.processor.batch_decode(transcription, skip_special_tokens=True)
+                predicted_ids = torch.argmax(outputs, dim=-1)
+                text_predictions = self.net.processor.batch_decode(predicted_ids, skip_special_tokens=True)
+                text_ground_truths = self.net.processor.batch_decode(labels, skip_special_tokens=True)
 
                 all_predictions.extend(text_predictions)
                 all_ground_truths.extend(text_ground_truths)
@@ -435,14 +433,13 @@ class Trainer():
             if self.params.use_weights_and_biases:
                 wandb.log({"train_wer": self.training_eval_metric})
 
-        self.model.train()
+        self.net.train()  # Change self.model to self.net
 
         logger.info("Training task evaluated.")
         logger.info(f"WER on training set: {self.training_eval_metric:.3f}")
-
     def evaluate_validation(self):
         logger.info("Evaluating validation task...")
-        self.net.eval()
+        self.net.eval()  # Change self.model to self.net
 
         all_predictions = []
         all_ground_truths = []
@@ -453,7 +450,7 @@ class Trainer():
                 input_features = input_features.to(self.device)
                 labels = labels.to(self.device)
 
-                outputs = self.net(input_features)
+                outputs = self.net(input_features)  # Change self.model to self.net
                 predicted_ids = torch.argmax(outputs, dim=-1)
 
                 predictions = self.net.processor.batch_decode(predicted_ids, skip_special_tokens=True)
@@ -483,7 +480,7 @@ class Trainer():
                 )
             })
 
-        self.net.train()
+        self.net.train()  # Change self.model to self.net
         logger.info(f"WER on validation set: {self.validation_eval_metric:.3f}")
     
     def train_single_epoch(self, epoch):
@@ -494,7 +491,7 @@ class Trainer():
             input_features = input_features.to(self.device)
             labels = labels.to(self.device)
 
-            outputs = self.net(input_features)
+            outputs = self.net(input_features, labels)
             loss = self.loss_function(outputs.view(-1, outputs.size(-1)), labels.view(-1))
 
             self.train_loss = loss.item()

@@ -17,7 +17,7 @@ TRAIN_DEFAULT_SETTINGS = {
     "learning_rate": 1e-4,
     "tokens_max_length": 444,
     "prompt_use_rate": 1,
-    "prompt_length": 223,
+    "prompt_length": 100,
     "speech_representation": "mel",
     "nmels": 80,
     "context_len": 100,

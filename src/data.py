@@ -322,7 +322,7 @@ class TrainDataset(Dataset):
         input_features = input_features.squeeze(0)  # Remove batch dimension
         
         # Pad or trim input features to account for soft prompts
-        target_length = self.prompt_length + N_FRAMES  # N_FRAMES should be defined based on Whisper's requirements
+        target_length =  N_FRAMES  # N_FRAMES should be defined based on Whisper's requirements
         if input_features.shape[1] < target_length:
             input_features = F.pad(input_features, (0, target_length - input_features.shape[1]))
         else:
