@@ -25,18 +25,16 @@ class PromptASR(nn.Module):
     def forward(self, input_features, labels=None):
         prompted_features = self.soft_prompting(input_features)
         
-        # Create decoder_input_ids
-        batch_size = input_features.size(0)
-        decoder_input_ids = torch.tensor([[self.processor.tokenizer.bos_token_id]] * batch_size).to(self.device)
+        if self.training:
+            # During training, we use the standard forward pass
+            outputs = self.whisper(input_features=prompted_features, labels=labels)
+        else:
+            # During inference, we use the generate method
+            forced_decoder_ids = self.processor.get_decoder_prompt_ids(language="ca", task="transcribe")
+            generated_ids = self.whisper.generate(
+                inputs=prompted_features,
+                forced_decoder_ids=forced_decoder_ids
+            )
+            outputs = {"generated_ids": generated_ids}
 
-        # If we are training (labels are provided), use teacher forcing
-        if labels is not None:
-            decoder_input_ids = torch.cat([decoder_input_ids, labels[:, :-1]], dim=1)
-
-        outputs = self.whisper(
-            input_features=prompted_features,
-            decoder_input_ids=decoder_input_ids,
-            labels=labels
-        )
-
-        return outputs.logits
+        return outputs

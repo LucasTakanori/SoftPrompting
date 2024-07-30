@@ -4,7 +4,8 @@ from torch import nn
 class SoftPrompting(nn.Module):
     def __init__(self, num_mel_bins, prompt_length):
         super().__init__()
-        self.soft_prompt = nn.Parameter(torch.randn(1, num_mel_bins, prompt_length))
+        self.soft_prompt = nn.Parameter(torch.empty(1, num_mel_bins, prompt_length))
+        nn.init.xavier_uniform_(self.soft_prompt)
         self.prompt_length = prompt_length
     
     def forward(self, input_features):
