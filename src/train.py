@@ -131,8 +131,6 @@ class Trainer():
         # Iterate over each prediction-ground truth pair
         for prediction, ground_truth in zip(predictions, ground_truths):
             # Calculate WER for the current pair after applying transformations
-            print("prediction: "+prediction)
-            print("ground truth: "+ ground_truth)
             wer = jiwer.wer(
                         ground_truth,
                         prediction,
@@ -323,7 +321,6 @@ class Trainer():
         elif logger_level == "DEBUG":
             logger.debug(message)
 
-
     def initialize_training_variables(self):
         
         logger.info(f'Initializing training variables... Checkpoint: {self.params.load_checkpoint} ')
@@ -472,13 +469,16 @@ class Trainer():
             logger.info(f"  Ground Truth: {all_ground_truths[i]}")
 
         if self.params.use_weights_and_biases:
+            # Log val metric
             wandb.log({
                 "val_wer": self.validation_eval_metric,
-                "val_examples": wandb.Table(
-                    columns=["Prediction", "Ground Truth"],
-                    data=list(zip(all_predictions[:num_examples], all_ground_truths[:num_examples]))
-                )
             })
+            # Log some examples
+            num_examples = min(5, len(all_predictions))
+            example_table = wandb.Table(columns=["Prediction", "Ground Truth"])
+            for pred, truth in zip(all_predictions[:num_examples], all_ground_truths[:num_examples]):
+                example_table.add_data(pred, truth)
+            wandb.log({"baseline_examples": example_table})
 
         self.net.train()
         logger.info(f"WER on validation set: {self.validation_eval_metric:.3f}")
