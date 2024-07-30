@@ -1,0 +1,31 @@
+24-07-30 07:56:27 - __main__ - INFO - Setting parameters...
+24-07-30 07:56:27 - __main__ - INFO - Parameters set
+24-07-30 07:56:27 - __main__ - INFO - Setting device...
+24-07-30 07:56:27 - __main__ - INFO - Running on cuda device.
+24-07-30 07:56:27 - __main__ - INFO - 2 GPUs available.
+24-07-30 07:56:27 - __main__ - INFO - Device set
+24-07-30 07:56:27 - __main__ - INFO - Loading network...
+Special tokens have been added in the vocabulary, make sure the associated word embeddings are fine-tuned or trained.
+24-07-30 07:56:30 - __main__ - INFO - Network loaded.
+24-07-30 07:56:30 - __main__ - INFO - Loading training data...
+24-07-30 07:56:30 - __main__ - INFO - Loading validation data...
+24-07-30 07:56:30 - __main__ - INFO - Validation data loaded.
+24-07-30 07:56:30 - __main__ - INFO - Loading the loss function...
+24-07-30 07:56:30 - __main__ - INFO - Using CrossEntropyLoss() as loss function.
+24-07-30 07:56:30 - __main__ - INFO - Loading the optimizer... adam
+24-07-30 07:56:30 - __main__ - INFO - Optimizer adam loaded!
+24-07-30 07:56:30 - __main__ - INFO - Initializing training variables... Checkpoint: False 
+24-07-30 07:56:30 - __main__ - INFO - Training variables initialized.
+wandb: Currently logged in as: lucas-takanori-sanchez (bsc). Use `wandb login --relogin` to force relogin
+wandb: wandb version 0.17.5 is available!  To upgrade, please run:
+wandb:  $ pip install wandb --upgrade
+wandb: Tracking run with wandb version 0.16.6
+wandb: Run data is saved locally in /home/usuaris/veu/lucas.takanori/SoftPrompting/wandb/run-20240730_075632-bnh7421w
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run test1
+wandb: ⭐️ View project at https://wandb.ai/bsc/SoftPrompting
+wandb: 🚀 View run at https://wandb.ai/bsc/SoftPrompting/runs/bnh7421w
+24-07-30 07:56:39 - __main__ - INFO - Training with the following parameters:
+24-07-30 07:56:39 - __main__ - INFO - Starting training for 30 epochs.
+24-07-30 07:56:39 - __main__ - INFO - Starting epoch 0 of 30.
+Epoch 0:   0%|          | 0/30 [00:00<?, ?it/s]slurmstepd: error: *** JOB 68116 ON veuc01 CANCELLED AT 2024-07-30T07:56:40 ***
