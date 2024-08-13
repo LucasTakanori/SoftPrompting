@@ -1,7 +1,7 @@
 TRAIN_DEFAULT_SETTINGS = {
     "utterances_path": "/home/usuaris/veussd/lucas.takanori/lt400/train.tsv",
     "random_seed": 1234,
-    "max_epochs": 10,
+    "max_epochs": 20,
     "load_checkpoint" : False,
     "checkpoint_file_folder": "./checkpoints",
     "checkpoint_file_name": "latest_checkpoint.pth",
@@ -16,9 +16,8 @@ TRAIN_DEFAULT_SETTINGS = {
     "asr_model": "whisper",
     "learning_rate": 1e-4,
     "tokens_max_length": 444,
-    "prompt_depth": 32,
+    "prompt_use_rate": 1,
     "prompt_length": 100,
-    "prompt_dim": 512,
     "speech_representation": "mel",
     "nmels": 80,
     "context_len": 100,
@@ -26,7 +25,7 @@ TRAIN_DEFAULT_SETTINGS = {
     "optimizer": "adam",
     "vocab_size":51865 ,
     "validation_utterances_path":"/home/usuaris/veussd/lucas.takanori/lt400/dev.tsv",
-    "eval_and_save_best_model_every": 75,
+    "eval_and_save_best_model_every": 150,
     "use_weights_and_biases": True,
     "wandb_project": "SoftPrompting",
     "wandb_entity": 'bsc',  # Set this to your wandb username or team name if desired

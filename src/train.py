@@ -18,7 +18,8 @@ from data import TrainDataset
 from torch.utils.data import DataLoader
 from model import PromptASR
 from whisper.tokenizer import get_tokenizer
-
+from transformers import WhisperForConditionalGeneration, WhisperProcessor
+from tqdm import tqdm
 
 #region logging
 # Logging
@@ -46,9 +47,9 @@ class Trainer():
         self.start_datetime = datetime.datetime.strftime(datetime.datetime.now(), '%y-%m-%d %H:%M:%S')
         self.set_params(trainer_params)
         self.set_device()
+        self.load_network() 
         self.load_training_data()
         self.load_validation_data() 
-        self.load_network()
         self.load_loss_function()
         self.load_optimizer()
         self.initialize_training_variables()
@@ -73,7 +74,7 @@ class Trainer():
         for key, value in sorted(params_dict.items()):
             print(f"{key}: {value}")        
 
-        logger.info('Parameters setted.')
+        logger.info('Parameters set')
 
 
     def set_device(self):
@@ -93,9 +94,8 @@ class Trainer():
         else:
             self.gpus_count = 0
         
-        logger.info("Device setted.")
+        logger.info("Device set")
     
-
 
     def calculate_wer(self, predictions: List[str], ground_truths: List[str]) -> float:
         """
@@ -144,9 +144,6 @@ class Trainer():
 
         return average_wer
 
-
-
-    # Function to calculate CER
     def calculate_cer(self, references, hypotheses):
         return jiwer.cer(references, hypotheses)
 
@@ -171,42 +168,26 @@ class Trainer():
         
         return self.epoch + 1
     
-
     def load_optimizer(self):
-        logger.info(f"Loading the optimizer... {self.params.optimizer}") 
-        #logger.info(f"self.net.parameters() type: {type(self.net.parameters)}")
-        #logger.info(f"self.params type: {type(self.params)}")
-        logger.info(self.net.parameters())
-
-        #for param in filter(lambda p: p.requires_grad, self.net.parameters()):
-        #    print(param.size())
-
-
+        logger.info(f"Loading the optimizer... {self.params.optimizer}")
         if self.params.optimizer == 'adam':
-            # HACK Mirar be quins parametres ficar 
-
             self.optimizer = optim.Adam(
-                filter(lambda p: p.requires_grad, self.net.parameters()),
-                #self.net.parameters.parse_args(),
+                self.net.trainable_params,
                 lr=self.params.learning_rate,
-                #weight_decay=self.params.weight_decay
             )
-
         if self.params.optimizer == 'rmsprop':
             self.optimizer = optim.RMSprop(
-                #self.net.parameters(), 
-                filter(lambda p: p.requires_grad, self.net.parameters()), 
+                self.net.trainable_params,  # Changed from filter(lambda p: p.requires_grad, self.net.parameters())
                 lr=self.params.learning_rate, 
                 weight_decay=self.params.weight_decay,
-                )
+            )
         if self.params.optimizer == 'adamw':
             self.optimizer = optim.AdamW(
-                #self.net.parameters(), 
-                filter(lambda p: p.requires_grad, self.net.parameters()), 
+                self.net.trainable_params,  # Changed from filter(lambda p: p.requires_grad, self.net.parameters())
                 lr=self.params.learning_rate, 
                 weight_decay=self.params.weight_decay,
-                )       
-            
+            )
+                    
         if self.params.load_checkpoint == True:
             self.load_checkpoint_optimizer()
         #logger.info(type(self.optimizer))
@@ -217,8 +198,6 @@ class Trainer():
         self.params = self.checkpoint["settings"]
         logger.info("Checkpoint parameters loaded!")
 
-
- 
     def load_loss_function(self):
         logger.info("Loading the loss function...")
 
@@ -264,21 +243,20 @@ class Trainer():
     def load_training_data(self):
         '''Load training data.'''
         logger.info("Loading training data...")
-        training_dataset = TrainDataset(utterances_paths=self.params.utterances_path,
-                                        random_crop_secs=self.params.random_crop_secs,
-                                        tokens_max_length=self.params.tokens_max_length,
-                                        speech_representation=self.params.speech_representation,
-                                        vocab_size=self.params.vocab_size,
-                                        nmels=self.params.nmels,
-                                        prompt_use_rate= 0.5, #HACK learn wtf is this
-                                        max_prompt_length=223, #HACK I have other metric for this. Unify
-                                        context_len=self.params.context_len,
-                                        augmentation_prob=self.params.training_augmentation_prob,
-                                        padding_type=self.params.padding_type,
-                                        whisper_flavour=self.params.whisper_flavour,
-                                        sample_rate=self.params.sample_rate,
-                                        waveforms_mean=None,
-                                        waveforms_std=None)
+        training_dataset = TrainDataset(
+            utterances_paths=self.params.utterances_path,
+            processor=self.net.processor,
+            random_crop_secs=self.params.random_crop_secs,
+            tokens_max_length=self.params.tokens_max_length,
+            speech_representation=self.params.speech_representation,
+            prompt_use_rate=0.5, 
+            prompt_length=100,  
+            vocab_size=self.params.vocab_size,
+            nmels=self.params.nmels,
+            padding_type=self.params.padding_type,
+            augmentation_prob=self.params.training_augmentation_prob,
+            sample_rate=self.params.sample_rate
+        )
         
         data_loader_parameters = {
             "batch_size": self.params.batch_size,
@@ -287,105 +265,46 @@ class Trainer():
         }
 
         self.training_generator = DataLoader(
-            training_dataset,
-            **data_loader_parameters,
-        )
-        del training_dataset
+        training_dataset,
+        **data_loader_parameters
+    )
+        del training_dataset    
 
     def load_validation_data(self):
         '''Load validation data.'''
         logger.info('Loading validation data...')
-        validation_dataset = TrainDataset(utterances_paths=self.params.validation_utterances_path,
-                                               random_crop_secs=self.params.random_crop_secs,
-                                               tokens_max_length=self.params.tokens_max_length,
-                                               speech_representation=self.params.speech_representation,
-                                               vocab_size=self.params.vocab_size,
-                                               nmels=self.params.nmels,
-                                               prompt_use_rate= 0.5,  # Adjust as needed
-                                               max_prompt_length=223,  # Adjust as needed
-                                               context_len=self.params.context_len,
-                                               augmentation_prob=self.params.training_augmentation_prob,
-                                               padding_type=self.params.padding_type,
-                                               whisper_flavour=self.params.whisper_flavour,
-                                               sample_rate=self.params.sample_rate,
-                                               waveforms_mean=None,
-                                               waveforms_std=None)
-
+        validation_dataset = TrainDataset(
+            utterances_paths=self.params.validation_utterances_path,
+            processor=self.net.processor,
+            random_crop_secs=self.params.random_crop_secs,
+            tokens_max_length=self.params.tokens_max_length,
+            speech_representation=self.params.speech_representation,
+            prompt_use_rate=0.5,  
+            prompt_length=223, 
+            vocab_size=self.params.vocab_size,
+            nmels=self.params.nmels,
+            padding_type=self.params.padding_type,
+            sample_rate=self.params.sample_rate
+        )
 
         eval_data_loader_parameters = {
             "batch_size": self.params.batch_size,
-            "shuffle": False,
+            "shuffle": False,  # Usually, we don't shuffle the validation data
             "num_workers": self.params.num_workers,
         }
 
         self.eval_generator = DataLoader(
-            validation_dataset,
-            **eval_data_loader_parameters,
+        validation_dataset,
+        **eval_data_loader_parameters
         )
+        logger.info('Validation data loaded.')
         del validation_dataset
-
     
-
-
     def load_network(self):
-        """Load the network."""
         logger.info("Loading network...")
-
-        # TODO: load the model
-        # Load model class
-        #self.net = Classifier(self.params, self.device)
-        
-        # HACK: naive model
         self.net = PromptASR(self.params, self.device)
-        logger.info(f"params in load_network {self.net.parameters}")
-
-        if self.params.load_checkpoint == True:
-            # TODO: load the model from the checkpoint if wanted
-            self.load_checkpoint_network()
-        
-        # TODO: Fix this 
-        """
-        # Data Parallelism
-        if torch.cuda.device_count() > 1:
-            logger.info(f"Using {torch.cuda.device_count()} GPUs for training.")
-            self.net = nn.DataParallel(self.net)
-        """
-
         self.net.to(self.device)
-        
-        logger.info(self.net)
-
-        # Print the number of trainable parameters
-        self.total_trainable_params = 0
-        parms_dict = {}
-        logger.info(f"Detail of every trainable layer:")
-
-        for name, parameter in self.net.named_parameters():
-
-            layer_name = name.split(".")[1]
-            if layer_name not in parms_dict.keys():
-                parms_dict[layer_name] = 0
-
-            logger.debug(f"name: {name}, layer_name: {layer_name}")
-
-            if not parameter.requires_grad:
-                continue
-            trainable_params = parameter.numel()
-
-            logger.info(f"{name} is trainable with {parameter.numel()} parameters")
-            
-            parms_dict[layer_name] = parms_dict[layer_name] + trainable_params
-            
-            self.total_trainable_params += trainable_params
-        
-        # Check if this is correct
-        logger.info(f"Total trainable parameters per layer:{self.total_trainable_params}")
-        for layer_name in parms_dict.keys():
-            logger.info(f"{layer_name}: {parms_dict[layer_name]}")
-
-        #summary(self.net, (150, self.params.feature_extractor_output_vectors_dimension))
-
-        logger.info(f"Network loaded, total_trainable_params: {self.total_trainable_params}")
+        logger.info("Network loaded.")
 
     def info_mem(self, step = None, logger_level = "INFO"):
 
@@ -401,7 +320,6 @@ class Trainer():
             logger.info(message)
         elif logger_level == "DEBUG":
             logger.debug(message)
-
 
     def initialize_training_variables(self):
         
@@ -437,7 +355,7 @@ class Trainer():
 
             self.evaluate()
 
-            if self.validation_eval_metric > self.best_model_validation_eval_metric:
+            if self.validation_eval_metric < self.best_model_validation_eval_metric:  # Changed to < because lower WER is better
                 logger.info('We found a better model!')
 
                 self.best_model_train_loss = self.train_loss
@@ -456,150 +374,129 @@ class Trainer():
                 self.validations_without_improvement += 1
                 self.validations_without_improvement_or_opt_update += 1
 
-                #if self.validations_without_improvement >= self.params.early_stopping_patience:
-                #    logger.info("Early stopping triggered.")
-                #    self.early_stopping_flag = True
-
     def evaluate(self):
         self.evaluate_training()
         self.evaluate_validation()
 
-
-
     def logits_to_words(self, logits):
-        pattern = r'<\|.*?\|>'
-
-        # Apply softmax to get probabilities
-        probabilities = torch.nn.functional.softmax(logits, dim=-1)
-        
-        # Select the token with the highest probability for each position
-        predicted_tokens = torch.argmax(probabilities, dim=-1)
-        
-        # Convert tokens to words
-        predicted_words = []
-        for tokens in predicted_tokens:
-            words = self.tokenizer.decode(tokens.tolist())
-            words = re.sub(pattern, '', words.replace('!',''))
-            predicted_words.append(words)
-    
-        return predicted_words
-
+        predicted_ids = torch.argmax(logits, dim=-1)
+        transcriptions = self.processor.batch_decode(predicted_ids, skip_special_tokens=True)
+        return transcriptions
+   
     def evaluate_training(self):
         logger.info("Evaluating training task...")
+        self.net.eval()
+
+        all_predictions = []
+        all_ground_truths = []
+        total_loss = 0
 
         with torch.no_grad():
-            self.net.eval()
+            progress_bar = tqdm(self.training_generator, desc="Evaluating Training")
+            for batch_data in progress_bar:
+                input_features, labels = batch_data
+                input_features = input_features.to(self.device)
+                labels = labels.to(self.device)
 
-            all_predictions = []
-            all_ground_truths = []
+                outputs = self.net(input_features)
+                
+                if "generated_ids" in outputs:
+                    predicted_ids = outputs["generated_ids"]
+                else:
+                    predicted_ids = outputs.logits.argmax(dim=-1)
 
-            for batch_data in self.training_generator:
-                input, transcription, decoder_input, ground_truth = batch_data
-                input = input.to(self.device)
-                decoder_input = decoder_input.to(self.device)
-                ground_truth = ground_truth.to(self.device)
+                predictions = self.net.processor.batch_decode(predicted_ids, skip_special_tokens=True)
+                ground_truths = self.net.processor.batch_decode(labels, skip_special_tokens=True)
 
-                # Calculate the prediction
-                prediction = self.net(input, decoder_input)
+                all_predictions.extend(predictions)
+                all_ground_truths.extend(ground_truths)
 
-                # Convert logits to words
-                text_predictions = self.logits_to_words(prediction)
-                #print("prediction")
-                #print(text_predictions)
-                text_ground_truths = self.logits_to_words(ground_truth)
-                #print("ground_truth")
-                #print(text_ground_truths)
-                all_predictions.extend(text_predictions)
-                all_ground_truths.extend(text_ground_truths)
+        # Calculate WER
+        metric_score = self.calculate_wer(all_predictions, all_ground_truths)
+        self.training_eval_metric = metric_score
+        logger.info(f"Training WER: {metric_score:.3f}")
 
-
-            # Calculate WER for all samples at once
-            metric_score = self.calculate_wer(all_predictions, all_ground_truths)
-            self.training_eval_metric = metric_score
-            logger.info(f"Training WER: {metric_score:.3f}")
-                    # Log to wandb
-            if self.params.use_weights_and_biases:
-                wandb.log({"train_wer": self.training_eval_metric})
+        if self.params.use_weights_and_biases:
+            wandb.log({
+                "train_wer": self.training_eval_metric,
+            })
 
         self.net.train()
-
-        logger.info("Training task evaluated.")
         logger.info(f"WER on training set: {self.training_eval_metric:.3f}")
 
     def evaluate_validation(self):
         logger.info("Evaluating validation task...")
+        self.net.eval()
+
+        all_predictions = []
+        all_ground_truths = []
 
         with torch.no_grad():
-            self.net.eval()
+            progress_bar = tqdm(self.eval_generator, desc="Evaluating Validation")
+            for batch_data in progress_bar:
+                input_features, labels = batch_data
+                input_features = input_features.to(self.device)
+                labels = labels.to(self.device)
 
-            all_predictions = []
-            all_ground_truths = []
+                outputs = self.net(input_features)
+                
+                if isinstance(outputs, dict):
+                    if "generated_ids" in outputs:
+                        predicted_ids = outputs["generated_ids"]
+                    elif "logits" in outputs:
+                        predicted_ids = outputs["logits"].argmax(dim=-1)
+                    else:
+                        raise ValueError(f"Unexpected output format: {outputs.keys()}")
+                else:
+                    predicted_ids = outputs.argmax(dim=-1)
 
-            for batch_data in self.eval_generator:
-                input, transcription, decoder_input, ground_truth = batch_data
-                input = input.to(self.device)
-                decoder_input = decoder_input.to(self.device)
-                ground_truth = ground_truth.to(self.device)
+                predictions = self.net.processor.batch_decode(predicted_ids, skip_special_tokens=True)
+                ground_truths = self.net.processor.batch_decode(labels, skip_special_tokens=True)
 
-                prediction = self.net(input, decoder_input)
+                all_predictions.extend(predictions)
+                all_ground_truths.extend(ground_truths)
 
-                text_predictions = self.logits_to_words(prediction)
-                text_ground_truths = self.logits_to_words(ground_truth)
+        # Calculate WER
+        metric_score = self.calculate_wer(all_predictions, all_ground_truths)
+        self.validation_eval_metric = metric_score
+        logger.info(f"Validation WER: {metric_score:.3f}")
 
-                all_predictions.extend(text_predictions)
-                all_ground_truths.extend(text_ground_truths)
+        # Log some examples
+        num_examples = min(5, len(all_predictions))
+        for i in range(num_examples):
+            logger.info(f"Example {i+1}:")
+            logger.info(f"  Prediction: {all_predictions[i]}")
+            logger.info(f"  Ground Truth: {all_ground_truths[i]}")
 
-            metric_score = self.calculate_wer(all_predictions, all_ground_truths)
-            self.validation_eval_metric = metric_score
-
-            logger.info(f"Validation WER: {metric_score:.3f}")
-
-            # Log to wandb
-            if self.params.use_weights_and_biases:
-                wandb.log({"val_wer": self.validation_eval_metric})
+        if self.params.use_weights_and_biases:
+            # Log val metric
+            wandb.log({
+                "val_wer": self.validation_eval_metric,
+            })
+            # Log some examples
+            num_examples = min(5, len(all_predictions))
+            example_table = wandb.Table(columns=["Prediction", "Ground Truth"])
+            for pred, truth in zip(all_predictions[:num_examples], all_ground_truths[:num_examples]):
+                example_table.add_data(pred, truth)
+            wandb.log({"baseline_examples": example_table})
 
         self.net.train()
-
-        logger.info("Validation task evaluated.")
         logger.info(f"WER on validation set: {self.validation_eval_metric:.3f}")
 
     def train_single_epoch(self, epoch):
         logger.info(f"Starting epoch {epoch} of {self.params.max_epochs}.")
-
         self.net.train()
+        total_loss = 0
 
+        for self.batch_number, (input_features, labels) in enumerate(tqdm(self.training_generator, desc=f"Epoch {epoch}")):
+            input_features = input_features.to(self.device)
+            labels = labels.to(self.device)
 
-        for self.batch_number, batch_data in enumerate(self.training_generator):
-            input, transcription, decoder_input, ground_truth = batch_data
-            input, transcription, decoder_input, ground_truth = input.to(self.device), transcription.to(self.device), decoder_input.to(self.device), ground_truth.to(self.device)
-                      
-            #if self.batch_number == 0: logger.info(f"input.size(): {input.size()}")
+            outputs = self.net(input_features, labels)
+            loss = outputs.loss
 
-            # Calculate the prediction and the loss:
-            prediction = self.net(input, decoder_input)
-
-            prediction = prediction.to(self.device)
-            
-            #print(prediction)
-            #print("prediction")
-            #print(self.logits_to_words(prediction))
-            #print("ground truth")
-            #print(self.logits_to_words(ground_truth))
-            #logger.info(f"In File train.py and function train_single_epoch() : input.size(): {input.size()}, transcription.size(): {transcription.size()}, len(prediction): {len(prediction)}") # WATCH OUT IF BATCH NUMBER >1 ERROR
-            # Print predictions (add this line)
-            # HACK prediction goes torch.Size([16, 448, 51865] instead of 444 just take the tensor and crop it
-            #if(prediction.size(2)!=2):  prediction = prediction[:, :, :444]
-
-            #logger.info(f"Prediction type: {prediction.dtype}")
-            #logger.info(f"Ground truth type: {ground_truth.dtype}")
-
-            #logger.info(f"Prediction size: {prediction.size()}")
-            #logger.info(f"Ground truth size: {ground_truth.size()}")
-
-            self.loss = self.loss_function(prediction, ground_truth)
-            logger.info(f"loss: {self.loss}")
-
-            self.train_loss = self.loss.item()
+            self.train_loss = loss.item()
+            total_loss += self.train_loss
 
             # Log to wandb
             if self.params.use_weights_and_biases:
@@ -610,41 +507,23 @@ class Trainer():
                 })
 
             # Backpropagation
-            #logger.info(type(self.optimizer))
             self.optimizer.zero_grad()
-            self.loss.backward()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.net.trainable_params, max_norm=1.0)
             self.optimizer.step()
 
-            self.step = self.step + 1
-            # Evaluate and save the best model
-            self.eval_and_save_best_model()
+            self.step += 1
+            if self.step % 100 == 0:
+                logger.info(f"Step {self.step}, Loss: {self.train_loss:.4f}")
 
-            # Update best loss
-            if self.train_loss < self.best_train_loss:
-                self.best_train_loss = self.train_loss
+            if self.step % self.params.eval_and_save_best_model_every == 0:
+                self.eval_and_save_best_model()
 
-    # def train(self, starting_epoch, max_epochs):
-    #     logger.info(f'Starting training for {self.params.max_epochs} epochs.')
-
-    #     try:
-    #         for self.epoch in range(starting_epoch, max_epochs):
-    #             self.train_single_epoch(self.epoch)
-
-    #             logger.info(f"The evaluation metric is {self.validation_eval_metric}")
-
-    #             if self.early_stopping_flag:
-    #                 logger.info("Early stopping triggered.")
-    #                 break
-
-    #     except Exception as e:
-    #         logger.error(f"An error occurred during training: {str(e)}")
-    #         # Optionally, you can add code here to save the model state before exiting
-
-    #    logger.info('Training finished!')
+        avg_loss = total_loss / len(self.training_generator)
+        logger.info(f"Epoch {epoch} average loss: {avg_loss:.4f}")
 
     def train(self, starting_epoch, max_epochs):
-        logger.info(f'Starting training for {self.params.max_epochs} epochs.')
-
+        logger.info(f'Starting training for {max_epochs} epochs.')
 
         for self.epoch in range(starting_epoch, max_epochs):
             self.train_single_epoch(self.epoch)
@@ -654,6 +533,8 @@ class Trainer():
             if self.early_stopping_flag:
                 logger.info("Early stopping triggered.")
                 break
+
+        logger.info("Training completed.")
 
     def save_model(self):
         logger.info("Saving the best model...")
@@ -685,9 +566,6 @@ class Trainer():
         if self.params.use_weights_and_biases: self.delete_version_artifacts()  
 
                  
-
-
-
 
 def main():
     args_parser = ArgsParser()

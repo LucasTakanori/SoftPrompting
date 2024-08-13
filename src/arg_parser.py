@@ -148,32 +148,25 @@ class ArgsParser:
             )         
         
         self.parser.add_argument(
-            '--prompt_depth',
-            type = int,
-            default = TRAIN_DEFAULT_SETTINGS["prompt_depth"],
-            help = 'The depth of the prompting model.'
+            '--prompt_use_rate',
+            type = float,
+            default = TRAIN_DEFAULT_SETTINGS["prompt_use_rate"],
+            help = 'The rate at which prompts are used during training.'
         )
 
         self.parser.add_argument(
             '--prompt_length',
             type = int,
             default = TRAIN_DEFAULT_SETTINGS["prompt_length"],
-            help = 'The length of the prompting model.'
+            help = 'The length of the prompt.'
         )
-
-        self.parser.add_argument(
-            '--prompt_dim',
-            type = int,
-            default = TRAIN_DEFAULT_SETTINGS["prompt_dim"],
-            help = 'The dimension of the prompting model.'
-        )
+        
         self.parser.add_argument(
             '--speech_representation',
             type = str,
             default = TRAIN_DEFAULT_SETTINGS["speech_representation"],
-            help = 'The processing done to the audiofile.'
+            help = 'The type of speech representation to use (e.g., "mel" for mel spectrogram).'
         )
-
         self.parser.add_argument(
             '--nmels',
             type = int, 

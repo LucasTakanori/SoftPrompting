@@ -1,24 +1,18 @@
-from torch import nn
 import torch
+from torch import nn
 
 class SoftPrompting(nn.Module):
-    def __init__(self, parameters) -> None:
+    def __init__(self, num_mel_bins, prompt_length):
         super().__init__()
-        #self.parameters = parameters
-        # The nmels parameter is 80 in the case of Whisper. 
-        self.soft_prompt_encoder = nn.Parameter(torch.Tensor(parameters.batch_size,
-                                                              parameters.nmels,
-                                                              parameters.prompt_length),
-                                                              requires_grad=True)
-        torch.nn.init.xavier_uniform_(self.soft_prompt_encoder)        
+        self.soft_prompt = nn.Parameter(torch.empty(1, num_mel_bins, prompt_length))
+        nn.init.xavier_uniform_(self.soft_prompt)
+        self.prompt_length = prompt_length
     
-    def get_tensor(self):
-
-        return self.soft_prompt_encoder
-
-
-    # def forward(self, input_tensor):
-    #     # Expanding soft_prompt_encoder to match the batch size of the input_tensor
-    #     #prompt = self.soft_prompt_encoder.expand(input_tensor.size(0), input_tensor.size(1), -1)
-    #     enhanced_input = torch.cat([input_tensor, self.prompt], dim=2)  # Concatenate along the feature dimension
-    #     return enhanced_input
+    def forward(self, input_features):
+        batch_size = input_features.size(0)
+        expanded_prompt = self.soft_prompt.expand(batch_size, -1, -1)
+        
+        # Replace the beginning of input_features with the soft prompt
+        prompted_features = torch.cat([expanded_prompt, input_features[:, :, self.prompt_length:]], dim=2)
+        
+        return prompted_features
