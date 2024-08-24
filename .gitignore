@@ -91,7 +91,9 @@ checkpoints/
 #finetunedWhisper
 fine_tuned_whisper/
 fine_tuned_whisper_catalan/
-
+whisper_cat_base/
+whisper_ft_ca/
+whisper_ft_ca2/
 
 # pyenv
 #   For a library or package, you might want to ignore these files since the code is
