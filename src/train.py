@@ -45,6 +45,7 @@ logger.addHandler(logger_stream_handler)
 class Trainer():
     def __init__(self, trainer_params):
         self.start_datetime = datetime.datetime.strftime(datetime.datetime.now(), '%y-%m-%d %H:%M:%S')
+        self.soft_prompt_location = trainer_params.soft_prompt_location
         self.set_params(trainer_params)
         self.set_device()
         self.load_network() 
@@ -76,7 +77,6 @@ class Trainer():
 
         logger.info('Parameters set')
 
-
     def set_device(self):
         '''Set torch device.'''
 
@@ -96,7 +96,6 @@ class Trainer():
         
         logger.info("Device set")
     
-
     def calculate_wer(self, predictions: List[str], ground_truths: List[str]) -> float:
         """
         Calculate the average Word Error Rate (WER) across all prediction-ground truth tuples,
@@ -255,7 +254,8 @@ class Trainer():
             nmels=self.params.nmels,
             padding_type=self.params.padding_type,
             augmentation_prob=self.params.training_augmentation_prob,
-            sample_rate=self.params.sample_rate
+            sample_rate=self.params.sample_rate,
+            soft_prompt_location=self.soft_prompt_location
         )
         
         data_loader_parameters = {
@@ -265,10 +265,10 @@ class Trainer():
         }
 
         self.training_generator = DataLoader(
-        training_dataset,
-        **data_loader_parameters
-    )
-        del training_dataset    
+            training_dataset,
+            **data_loader_parameters
+        )
+        del training_dataset
 
     def load_validation_data(self):
         '''Load validation data.'''
@@ -488,7 +488,14 @@ class Trainer():
         self.net.train()
         total_loss = 0
 
-        for self.batch_number, (input_features, labels) in enumerate(tqdm(self.training_generator, desc=f"Epoch {epoch}")):
+        for self.batch_number, batch_data in enumerate(tqdm(self.training_generator, desc=f"Epoch {epoch}")):
+            if self.soft_prompt_location == "decoder":
+                input_features, decoder_input, labels = batch_data
+                decoder_input = decoder_input.to(self.device)
+            else:
+                input_features, labels = batch_data
+                decoder_input = None
+
             input_features = input_features.to(self.device)
             labels = labels.to(self.device)
 
@@ -537,6 +544,8 @@ class Trainer():
         logger.info("Training completed.")
 
     def save_model(self):
+
+    
         logger.info("Saving the best model...")
         
         checkpoint = {
@@ -559,12 +568,29 @@ class Trainer():
 
         logger.info(f"Best model saved to {save_path}")
 
-    def main(self):
-        logger.info("Training with the following parameters:")
-        self.train(self.starting_epoch, self.params.max_epochs)
-        if self.params.use_weights_and_biases: self.save_model_artifact()
-        if self.params.use_weights_and_biases: self.delete_version_artifacts()  
+    def save_model_artifact(self):
+        try:
+            artifact = wandb.Artifact(f"model_{self.epoch}", type="model")
+            artifact.add_file(os.path.join(self.params.checkpoint_file_folder, f'best_model_epoch_{self.epoch}.pth'))
+            wandb.log_artifact(artifact)
+            logging.info(f"Model artifact saved for epoch {self.epoch}")
+        except Exception as e:
+            logging.error(f"Error saving model artifact: {str(e)}")
 
+    def main(self):
+        try:
+            logging.info("Training with the following parameters:")
+            self.train(self.starting_epoch, self.params.max_epochs)
+            if self.params.use_weights_and_biases:
+                self.save_model_artifact()
+        except Exception as e:
+            logging.error(f"Error during training: {str(e)}")
+        finally:
+            if self.params.use_weights_and_biases:
+                try:
+                    wandb.finish()
+                except Exception as e:
+                    logging.error(f"Error finishing wandb run: {str(e)}")
                  
 
 def main():
@@ -574,6 +600,6 @@ def main():
 
     trainer = Trainer(trainer_params)
     trainer.main()
-
+    
 if __name__=="__main__":
     main()

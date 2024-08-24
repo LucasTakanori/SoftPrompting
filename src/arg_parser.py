@@ -194,6 +194,13 @@ class ArgsParser:
             help = 'Learning rate of the optimizer'
         )
         self.parser.add_argument(
+            '--soft_prompt_location',
+            type=str,
+            default="encoder",
+            choices=["encoder", "decoder"],
+            help='Where to apply soft prompts: "encoder" or "decoder"'
+        )
+        self.parser.add_argument(
             '--vocab_size',
             type = int,
             default = TRAIN_DEFAULT_SETTINGS["vocab_size"],
