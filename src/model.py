@@ -8,8 +8,8 @@ class PromptASR(nn.Module):
         super().__init__()
         self.device = device
         self.params = parameters
-        self.whisper = WhisperForConditionalGeneration.from_pretrained("openai/whisper-tiny").to(device)
-        self.processor = WhisperProcessor.from_pretrained("openai/whisper-tiny")
+        self.whisper = WhisperForConditionalGeneration.from_pretrained(self.params.whisper_flavour).to(device)
+        self.processor = WhisperProcessor.from_pretrained(self.params.whisper_flavour)
         self.soft_prompting = SoftPrompting(
             self.whisper.config.num_mel_bins, 
             parameters.prompt_length

@@ -238,7 +238,6 @@ class Trainer():
 
         logger.addHandler(logger_file_handler)
 
-
     def load_training_data(self):
         '''Load training data.'''
         logger.info("Loading training data...")

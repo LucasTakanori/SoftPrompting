@@ -8,9 +8,9 @@ TRAIN_DEFAULT_SETTINGS = {
     "training_augmentation_prob": 0,
     "evaluation_augmentation_prob": 0,
     "sample_rate": 16000,
-    "whisper_flavour": "tiny",
-    "batch_size": 10,
-    "num_workers": 2,
+    "whisper_flavour": "openai/whisper-base",
+    "batch_size": 4,
+    "num_workers": 4,
     "random_crop_secs": 30,
     "padding_type": "zero_pad",
     "asr_model": "whisper",
@@ -19,7 +19,7 @@ TRAIN_DEFAULT_SETTINGS = {
     "prompt_use_rate": 1,
     "prompt_length": 100,
     "speech_representation": "mel",
-    "soft_prompt_location": "encoder",
+    "soft_prompt_location": "decoder",
     "nmels": 80,
     "context_len": 100,
     "loss": "CrossEntropy",
@@ -29,6 +29,6 @@ TRAIN_DEFAULT_SETTINGS = {
     "eval_and_save_best_model_every": 75,
     "use_weights_and_biases": True,
     "wandb_project": "SoftPrompting",
-    "wandb_entity": 'bsc',  # Set this to your wandb username or team name if desired
-    "wandb_run_name": 'encoder',  # Set this to a custom run name if desired
+    "wandb_entity": 'bsc',  
+    "wandb_run_name": 'decoder',  
 }
