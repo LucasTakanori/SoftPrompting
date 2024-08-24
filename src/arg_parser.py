@@ -197,8 +197,8 @@ class ArgsParser:
             '--soft_prompt_location',
             type=str,
             default="encoder",
-            choices=["encoder", "decoder"],
-            help='Where to apply soft prompts: "encoder" or "decoder"'
+            choices=["encoder", "decoder", "both"],
+            help='Where to apply soft prompts: "encoder" or "decoder" or "both"'
         )
         self.parser.add_argument(
             '--vocab_size',

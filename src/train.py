@@ -248,13 +248,13 @@ class Trainer():
             tokens_max_length=self.params.tokens_max_length,
             speech_representation=self.params.speech_representation,
             prompt_use_rate=0.5, 
-            prompt_length=100,  
+            prompt_length=self.params.prompt_length,  
             vocab_size=self.params.vocab_size,
             nmels=self.params.nmels,
             padding_type=self.params.padding_type,
             augmentation_prob=self.params.training_augmentation_prob,
             sample_rate=self.params.sample_rate,
-            soft_prompt_location=self.soft_prompt_location
+            soft_prompt_location=self.params.soft_prompt_location
         )
         
         data_loader_parameters = {
@@ -340,8 +340,8 @@ class Trainer():
             self.validation_eval_metric = 0.0
             self.best_train_loss = np.inf
             self.best_model_train_loss = np.inf
-            self.best_model_training_eval_metric = 0.0
-            self.best_model_validation_eval_metric = 0.0
+            self.best_model_training_eval_metric = np.inf
+            self.best_model_validation_eval_metric = np.inf
 
         self.total_batches = len(self.training_generator)
         logger.info("Training variables initialized.")
@@ -481,20 +481,14 @@ class Trainer():
 
         self.net.train()
         logger.info(f"WER on validation set: {self.validation_eval_metric:.3f}")
-
+    
     def train_single_epoch(self, epoch):
         logger.info(f"Starting epoch {epoch} of {self.params.max_epochs}.")
         self.net.train()
         total_loss = 0
 
         for self.batch_number, batch_data in enumerate(tqdm(self.training_generator, desc=f"Epoch {epoch}")):
-            if self.soft_prompt_location == "decoder":
-                input_features, decoder_input, labels = batch_data
-                decoder_input = decoder_input.to(self.device)
-            else:
-                input_features, labels = batch_data
-                decoder_input = None
-
+            input_features, labels = batch_data
             input_features = input_features.to(self.device)
             labels = labels.to(self.device)
 
@@ -556,7 +550,7 @@ class Trainer():
             'validation_metric': self.best_model_validation_eval_metric,
         }
         
-        save_path = os.path.join(self.params.checkpoint_file_folder, f'best_model_epoch_{self.epoch}.pth')
+        save_path = os.path.join(self.params.checkpoint_file_folder, self.params.wandb_run_name,f'best_model_epoch_{self.epoch}.pth')
         torch.save(checkpoint, save_path)
         
                 # Log model as artifact to wandb
