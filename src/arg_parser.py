@@ -196,7 +196,7 @@ class ArgsParser:
         self.parser.add_argument(
             '--soft_prompt_location',
             type=str,
-            default="encoder",
+            default=TRAIN_DEFAULT_SETTINGS["encoder"],
             choices=["encoder", "decoder", "both"],
             help='Where to apply soft prompts: "encoder" or "decoder" or "both"'
         )
