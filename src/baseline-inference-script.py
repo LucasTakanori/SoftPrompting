@@ -18,15 +18,16 @@ def calculate_wer(predictions, ground_truths):
 def main(args):
     # Initialize wandb
     if args.use_wandb:
-        wandb.init(project=args.wandb_project, entity=args.wandb_entity, name=args.wandb_run_name)
+        wandb.init(project=args.wandb_project, entity=args.wandb_entity, name=args.wandb_run_name, mode=args.wandb_mode)
 
     # Set device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # Load pre-trained model and processor
-    processor = WhisperProcessor.from_pretrained("openai/whisper-small")
-    model = WhisperForConditionalGeneration.from_pretrained("openai/whisper-small").to(device)
-
+    whisper_flavour = "/gpfs/projects/bsc88/speech/research/models/hf_models/whisper-tiny"
+    processor = WhisperProcessor.from_pretrained(whisper_flavour)
+    model = WhisperForConditionalGeneration.from_pretrained(whisper_flavour).to(device)
+    print(whisper_flavour)
     # Create test dataset and dataloader
     test_dataset = TrainDataset(
         utterances_paths=args.test_data_path,
@@ -88,13 +89,14 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run baseline inference with Whisper model")
     parser.add_argument("--test_data_path", type=str, required=True, help="Path to the test dataset")
-    parser.add_argument("--batch_size", type=int, default=8, help="Batch size for inference")
-    parser.add_argument("--num_workers", type=int, default=4, help="Number of workers for data loading")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for inference")
+    parser.add_argument("--num_workers", type=int, default=8, help="Number of workers for data loading")
     parser.add_argument("--tokens_max_length", type=int, default=448, help="Maximum length of token sequences")
     parser.add_argument("--use_wandb", action="store_true", help="Use Weights & Biases for logging")
     parser.add_argument("--wandb_project", type=str, default="SoftPrompting", help="Wandb project name")
     parser.add_argument("--wandb_entity", type=str, default="bsc", help="Wandb entity")
-    parser.add_argument("--wandb_run_name", type=str, default="baseline-run-small", help="Wandb run name")
+    parser.add_argument("--wandb_run_name", type=str, default="baseline-run-medium-devlt", help="Wandb run name")
+    parser.add_argument("--wandb_mode", type=str, default="offline", help="Wandb mode, offline or online")
     
     args = parser.parse_args()
     main(args)
