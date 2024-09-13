@@ -196,7 +196,7 @@ class ArgsParser:
         self.parser.add_argument(
             '--soft_prompt_location',
             type=str,
-            default=TRAIN_DEFAULT_SETTINGS["encoder"],
+            default=TRAIN_DEFAULT_SETTINGS["soft_prompt_location"],
             choices=["encoder", "decoder", "both"],
             help='Where to apply soft prompts: "encoder" or "decoder" or "both"'
         )
@@ -233,6 +233,14 @@ class ArgsParser:
             default = TRAIN_DEFAULT_SETTINGS['wandb_run_name'],
             help = 'The name of the Weights and Biases run.',
             )
+        
+        self.parser.add_argument(
+            '--wandb_mode',
+            type=str,
+            default=TRAIN_DEFAULT_SETTINGS['wandb_mode'],
+            choices=['online', 'offline'],
+            help='The mode for Weights and Biases: "online" or "offline".',
+        )
 
 
 

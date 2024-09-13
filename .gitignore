@@ -95,9 +95,12 @@ whisper_cat_base/
 whisper_ft_ca/
 whisper_ft_ca2/
 
-
 logs/
+checkpoints/
 
+
+/gpfs/projects/bsc88/speech/research/repos/SoftPrompting/shs/naive_train.sh
+/gpfs/projects/bsc88/speech/research/repos/SoftPrompting/shs/baseline.sh
 # pyenv
 #   For a library or package, you might want to ignore these files since the code is
 #   intended to run in multiple environments; otherwise, check them in:

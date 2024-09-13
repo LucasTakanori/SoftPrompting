@@ -1,13 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=baseline_largev2
+#SBATCH --job-name=SoftpromptLOT9Encoder
+#SBATCH -D .
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1 
-#SBATCH --cpus-per-task=40
-#SBATCH --time=04:00:00
-#SBATCH --gres=gpu:2
+#SBATCH --cpus-per-task=80
+#SBATCH --time=24:00:00
+#SBATCH --gres=gpu:4
 #SBATCH --account bsc88
 ##SBATCH --exclusive
 ##SBATCH --qos acc_debug
@@ -16,6 +17,8 @@
 #SBATCH --mail-user=lucas.sanchez@bsc.es
 date
 module load impi intel mkl hdf5 
+module load EB/apps EB/install 
+module load FFmpeg/6.0-GCCcore-13.2.0
 #module load intel hdf5 mkl 
 #export LD_LIBRARY_PATH=/gpfs/apps/MN5/ACC/HDF5/SRC/hdf5-hdf5-1_14_1-2/src/.libs/libhdf5.so.310:$LD_LIBRARY_PATH
 
@@ -29,10 +32,12 @@ export GPUS_PER_NODE=4
 export HF_HUB_OFFLINE=1
 export HF_DATASETS_OFFLINE=1
 
+export HF_HOME=/gpfs/projects/bsc88/speech/research/repos/SoftPrompting/CACHE
+export HF_DATASETS_CACHE=/gpfs/projects/bsc88/speech/research/repos/SoftPrompting/CACHE
+export CACHE_DIR=/gpfs/projects/bsc88/speech/research/repos/SoftPrompting/CACHE
 #export HF_DATASET="/gpfs/projects/bsc88/speech/data/raw_data/1_DATALOADERS/CATALAN_DATALOADER/loading_script_whisper.py"
 
-python src/baseline-inference-script.py --test_data_path /gpfs/projects/bsc88/speech/research/repos/SoftPrompting/data/train.tsv --use_wandb
-##/gpfs/projects/bsc88/speech/research/db/lt/train.tsv
-#/gpfs/projects/bsc88/speech/research/repos/SoftPrompting/data/dev.tsv
+python src/encoder/train.py 
+
 date
     

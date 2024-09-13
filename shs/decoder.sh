@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=SoftpromptTinyDecoder
+#SBATCH --job-name=SoftpromptDecoder
 #SBATCH -D .
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err
@@ -37,7 +37,7 @@ export HF_DATASETS_CACHE=/gpfs/projects/bsc88/speech/research/repos/SoftPromptin
 export CACHE_DIR=/gpfs/projects/bsc88/speech/research/repos/SoftPrompting/CACHE
 #export HF_DATASET="/gpfs/projects/bsc88/speech/data/raw_data/1_DATALOADERS/CATALAN_DATALOADER/loading_script_whisper.py"
 
-python src/train.py 
+python src/decoder/train.py 
 
 date
     

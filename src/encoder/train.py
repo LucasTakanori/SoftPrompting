@@ -20,6 +20,9 @@ from model import PromptASR
 from whisper.tokenizer import get_tokenizer
 from transformers import WhisperForConditionalGeneration, WhisperProcessor
 from tqdm import tqdm
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+
+os.environ["PYTORCH_CUDA_ALLOC_CONF"]="expandable_segments:True"
 
 #region logging
 # Logging
@@ -53,6 +56,7 @@ class Trainer():
         self.load_validation_data() 
         self.load_loss_function()
         self.load_optimizer()
+        self.load_scheduler()
         self.initialize_training_variables()
         self.tokenizer = get_tokenizer(self.params.whisper_flavour)
         if self.params.use_weights_and_biases:
@@ -60,7 +64,8 @@ class Trainer():
                 project=self.params.wandb_project,
                 entity=self.params.wandb_entity,
                 name=self.params.wandb_run_name,
-                config=vars(self.params)
+                config=vars(self.params),
+                mode=self.params.wandb_mode
             )
 
     def set_params(self, input_params):
@@ -158,6 +163,7 @@ class Trainer():
         
         self.net.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])  # New line
         self.epoch = checkpoint['epoch']
         self.best_model_train_loss = checkpoint['loss']
         self.best_model_training_eval_metric = checkpoint['training_metric']
@@ -191,6 +197,17 @@ class Trainer():
             self.load_checkpoint_optimizer()
         #logger.info(type(self.optimizer))
         logger.info(f"Optimizer {self.params.optimizer} loaded!")
+
+    def load_scheduler(self):
+        logger.info("Loading the learning rate scheduler...")
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer,
+            mode='min',
+            factor=0.5,
+            patience=1,
+            verbose=True
+        )
+        logger.info("Learning rate scheduler loaded!")
 
     def load_checkpoint_params(self):
         logger.info("Loading checkpoint parameters...")
@@ -354,6 +371,8 @@ class Trainer():
 
             self.evaluate()
 
+            self.scheduler.step(self.validation_eval_metric)
+            
             if self.validation_eval_metric < self.best_model_validation_eval_metric:  # Changed to < because lower WER is better
                 logger.info('We found a better model!')
 
@@ -498,12 +517,12 @@ class Trainer():
             self.train_loss = loss.item()
             total_loss += self.train_loss
 
-            # Log to wandb
             if self.params.use_weights_and_biases:
                 wandb.log({
                     "train_loss": self.train_loss,
                     "epoch": self.epoch,
-                    "step": self.step
+                    "step": self.step,
+                    "learning_rate": self.optimizer.param_groups[0]['lr']  
                 })
 
             # Backpropagation
@@ -537,36 +556,50 @@ class Trainer():
         logger.info("Training completed.")
 
     def save_model(self):
-
-    
         logger.info("Saving the best model...")
         
-        checkpoint = {
-            'epoch': self.epoch,
-            'model_state_dict': self.net.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-            'loss': self.best_model_train_loss,
-            'training_metric': self.best_model_training_eval_metric,
-            'validation_metric': self.best_model_validation_eval_metric,
-        }
+        save_dir = os.path.join(self.params.checkpoint_file_folder, self.params.wandb_run_name)
+        os.makedirs(save_dir, exist_ok=True)
+        save_path = os.path.join(save_dir, f'best_model_epoch_{self.epoch}.pth')
         
-        save_path = os.path.join(self.params.checkpoint_file_folder, self.params.wandb_run_name,f'best_model_epoch_{self.epoch}.pth')
-        torch.save(checkpoint, save_path)
-        
-                # Log model as artifact to wandb
-        if self.params.use_weights_and_biases:
-            artifact = wandb.Artifact(f"best_model_epoch_{self.epoch}", type="model")
-            artifact.add_file(save_path)
-            wandb.log_artifact(artifact)
+        try:
+            
+            self.net.save_pretrained(save_path)
+            
+            checkpoint = {
+                'epoch': self.epoch,
+                'model_state_dict': self.net.state_dict(),
+                'optimizer_state_dict': self.optimizer.state_dict(),
+                'scheduler_state_dict': self.scheduler.state_dict(),  
+                'loss': self.best_model_train_loss,
+                'training_metric': self.best_model_training_eval_metric,
+                'validation_metric': self.best_model_validation_eval_metric,
+            }
+            
+            torch.save(checkpoint, save_path)
+            
+            # Log model as artifact to wandb
+            if self.params.use_weights_and_biases:
+                artifact = wandb.Artifact(f"best_model_epoch_{self.epoch}", type="model")
+                artifact.add_file(save_path)
+                wandb.log_artifact(artifact)
 
-        logger.info(f"Best model saved to {save_path}")
+            logger.info(f"Best model saved to {save_path}")
+        except Exception as e:
+            logger.error(f"Failed to save model: {str(e)}")
 
     def save_model_artifact(self):
         try:
-            artifact = wandb.Artifact(f"model_{self.epoch}", type="model")
-            artifact.add_file(os.path.join(self.params.checkpoint_file_folder, f'best_model_epoch_{self.epoch}.pth'))
-            wandb.log_artifact(artifact)
-            logging.info(f"Model artifact saved for epoch {self.epoch}")
+            save_dir = os.path.join(self.params.checkpoint_file_folder, self.params.wandb_run_name)
+            save_path = os.path.join(save_dir, f'best_model_epoch_{self.epoch}.pth')
+            
+            if os.path.isfile(save_path):
+                artifact = wandb.Artifact(f"model_{self.epoch}", type="model")
+                artifact.add_file(save_path)
+                wandb.log_artifact(artifact)
+                logging.info(f"Model artifact saved for epoch {self.epoch}")
+            else:
+                logging.error(f"Model file not found: {save_path}")
         except Exception as e:
             logging.error(f"Error saving model artifact: {str(e)}")
 

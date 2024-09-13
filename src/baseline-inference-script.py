@@ -24,7 +24,7 @@ def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # Load pre-trained model and processor
-    whisper_flavour = "/gpfs/projects/bsc88/speech/research/models/hf_models/whisper-tiny"
+    whisper_flavour = "/gpfs/projects/bsc88/speech/research/models/hf_models/whisper-large-v2"
     processor = WhisperProcessor.from_pretrained(whisper_flavour)
     model = WhisperForConditionalGeneration.from_pretrained(whisper_flavour).to(device)
     print(whisper_flavour)
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     parser.add_argument("--use_wandb", action="store_true", help="Use Weights & Biases for logging")
     parser.add_argument("--wandb_project", type=str, default="SoftPrompting", help="Wandb project name")
     parser.add_argument("--wandb_entity", type=str, default="bsc", help="Wandb entity")
-    parser.add_argument("--wandb_run_name", type=str, default="baseline-run-medium-devlt", help="Wandb run name")
+    parser.add_argument("--wandb_run_name", type=str, default="baseline-run-large-devlt", help="Wandb run name")
     parser.add_argument("--wandb_mode", type=str, default="offline", help="Wandb mode, offline or online")
     
     args = parser.parse_args()
