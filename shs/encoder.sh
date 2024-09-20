@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=SoftpromptLOT9Encoder
+#SBATCH --job-name=SoftpromptLOT9EncoderLargeV2
 #SBATCH -D .
 #SBATCH --output=logs/%x_%j.out
 #SBATCH --error=logs/%x_%j.err

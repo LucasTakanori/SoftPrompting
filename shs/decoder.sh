@@ -7,8 +7,8 @@
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1 
 #SBATCH --cpus-per-task=80
-#SBATCH --time=24:00:00
-#SBATCH --gres=gpu:4
+#SBATCH --time=2:00:00
+#SBATCH --gres=gpu:1
 #SBATCH --account bsc88
 ##SBATCH --exclusive
 ##SBATCH --qos acc_debug

@@ -41,10 +41,9 @@ logger.addHandler(logger_stream_handler)
 class TrainDataset(Dataset):
     def __init__(self, utterances_paths, processor, random_crop_secs, tokens_max_length, 
                  speech_representation, prompt_use_rate, prompt_length, vocab_size, 
-                 nmels=80, padding_type="zero_pad", augmentation_prob=0, sample_rate=16000,soft_prompt_location="encoder"):
+                 nmels=80, padding_type="zero_pad", augmentation_prob=0, sample_rate=16000):
         self.utterances_paths = utterances_paths
         self.processor = processor
-        self.soft_prompt_location = soft_prompt_location
         self.random_crop_secs = random_crop_secs
         self.tokens_max_length = tokens_max_length
         self.speech_representation = speech_representation
@@ -323,7 +322,7 @@ class TrainDataset(Dataset):
         input_features = input_features.squeeze(0)  # Remove batch dimension
         
         # Pad or trim input features to account for soft prompts
-        target_length = N_FRAMES  # N_FRAMES should be defined based on Whisper's requirements
+        target_length =  N_FRAMES  # N_FRAMES should be defined based on Whisper's requirements
         if input_features.shape[1] < target_length:
             input_features = F.pad(input_features, (0, target_length - input_features.shape[1]))
         else:
@@ -338,9 +337,4 @@ class TrainDataset(Dataset):
         else:
             labels = labels[:self.tokens_max_length]
 
-        if self.soft_prompt_location == "decoder":
-            # For decoder soft prompts, we need to shift the labels to create decoder input
-            decoder_input = F.pad(labels[:-1], (1, 0), value=self.processor.tokenizer.bos_token_id)
-            return input_features, decoder_input, labels
-        else:
-            return input_features, labels
+        return input_features, labels    

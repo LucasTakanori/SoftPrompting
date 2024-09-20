@@ -1,7 +1,7 @@
 TRAIN_DEFAULT_SETTINGS = {
-    "utterances_path": "/gpfs/projects/bsc88/speech/research/db/lt/train.tsv",
+    "utterances_path": "/gpfs/projects/bsc88/speech/research/db/lt/dev.tsv",
     "random_seed": 1234,
-    "max_epochs": 10,
+    "max_epochs": 1,
     "load_checkpoint" : False,
     "checkpoint_file_folder": "/gpfs/projects/bsc88/speech/research/repos/SoftPrompting/checkpoints",
     "checkpoint_file_name": "latest_checkpoint.pth",
@@ -9,7 +9,7 @@ TRAIN_DEFAULT_SETTINGS = {
     "evaluation_augmentation_prob": 0,
     "sample_rate": 16000,
     "whisper_flavour": "/gpfs/projects/bsc88/speech/research/models/hf_models/whisper-base",
-    "batch_size": 10,
+    "batch_size": 1,
     "num_workers": 16,
     "random_crop_secs": 30,
     "padding_type": "zero_pad",

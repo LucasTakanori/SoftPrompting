@@ -48,7 +48,6 @@ logger.addHandler(logger_stream_handler)
 class Trainer():
     def __init__(self, trainer_params):
         self.start_datetime = datetime.datetime.strftime(datetime.datetime.now(), '%y-%m-%d %H:%M:%S')
-        self.soft_prompt_location = trainer_params.soft_prompt_location
         self.set_params(trainer_params)
         self.set_device()
         self.load_network() 
@@ -270,8 +269,7 @@ class Trainer():
             nmels=self.params.nmels,
             padding_type=self.params.padding_type,
             augmentation_prob=self.params.training_augmentation_prob,
-            sample_rate=self.params.sample_rate,
-            soft_prompt_location=self.params.soft_prompt_location
+            sample_rate=self.params.sample_rate
         )
         
         data_loader_parameters = {
